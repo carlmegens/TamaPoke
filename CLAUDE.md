@@ -355,6 +355,16 @@ in a menu row because every gesture from the main screen is taken.
   and name, so an adopted life starts exactly like a hatched one (level 1,
   level-1 moves, not frozen) -- do not give it its own copy of the start of a
   life. It is the opposite of `reviveFrom()`, which freezes. `adopt_test`.
+- TRADING (v3.29) rides the LAN link (`link.h`, `LM_TOFFER`/`LM_TACCEPT`/
+  `LM_TDONE`). The rule that must survive every change: each side STORES the
+  other's creature first and releases its own only on the peer's DONE
+  (`tradePoll()`), so a cut link duplicates, never loses. `trade_test` cuts the
+  radio at every frame of the exchange in both directions and fails on any
+  loss; `tradeflow_test` drives the screen and checks ours is still held while
+  their DONE is lost. Offers carry ever-growing sequence numbers and every OK
+  names both, so a resent OK can never close a newer deal. A READY link now
+  sends `LM_PING` when it has nothing else to say -- without it two players
+  choosing slowly were declared LOST after 12 s.
 - The egg hatches ONLY on the player's third tap (v3.23). It used to hatch by
   itself after 3 minutes, live or switched off, which closed the window for
   choosing its region or adopting almost at once. Neither `tick()` nor

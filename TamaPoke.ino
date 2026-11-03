@@ -44,7 +44,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "3.28"
+#define FW_VERSION "3.29"
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
   LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
@@ -6008,19 +6008,19 @@ void renderTrade() {
     // the deal: ours on the left, theirs on the right
     const char *hd[2] = { T(S_TRADE_GIVE), T(S_TRADE_GET) };
     for (int s = 0; s < 2; s++) {
-      int x = s ? 240 : 46;
-      gfx->drawRoundRect(x, 82, 180, 136, 14, s ? UI_BAR_OK : UI_INK);
+      int x = s ? 246 : 50;          // inside the round bezel at y 90
+      gfx->drawRoundRect(x, 90, 170, 132, 14, s ? UI_BAR_OK : UI_INK);
       gfx->setTextColor(UI_INK);
       gfx->setTextSize(1);
-      gfx->setCursor(x + 90 - (int)strlen(hd[s]) * 3, 88);
+      gfx->setCursor(x + 85 - (int)strlen(hd[s]) * 3, 96);
       gfx->print(hd[s]);
     }
-    tradeCard(lan.tMine, 136, 100);
-    if (lan.tradeHasTheirs()) tradeCard(lan.tTheirs, 330, 100);
+    tradeCard(lan.tMine, 135, 106);
+    if (lan.tradeHasTheirs()) tradeCard(lan.tTheirs, 331, 106);
     else {
       gfx->setTextColor(UI_TRACK);
       gfx->setTextSize(4);
-      gfx->setCursor(330 - 12, 140);
+      gfx->setCursor(331 - 12, 140);
       gfx->print("?");
     }
     const char *st = "";
