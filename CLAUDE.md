@@ -19,6 +19,7 @@ Personal, non-commercial fan project. Code MIT; sprites CC BY-NC (PMD SpriteColl
 | `i18n.cpp/.h` | 6-language string table (ES/EN/FR/DE/IT/PT) |
 | `audio.cpp/.h` | ES8311 codec over I2S |
 | `backs.h` | GENERATED (`tools/gen_backs.py`) from `tools/backs/*.png`: the biome backdrops (supplied art), the gym arenas (`tools/gen_scenes.py`, ours) and the main screen's `HOMES` (`tools/gen_home.py`, ours: one index image per biome with FOUR palettes, dawn/day/dusk/night, which `home_test` reads back off the panel). Any PNG under a scene's name replaces it |
+| `power.h` / `batcurve.h` / `blit.h` | From upstream (ViezeVingertjes): the power policy (frame rate, brightness, light sleep, `idleSince()`), the LiPo gauge and safe power-off, and sprites drawn as runs. Pure, so `power_test`, `batcurve_test` and `blit_test` drive them |
 | `audio_mix.h` | How loud each kind of sound is, and the music stepper -- shared with `loud_test`, which measures the balance |
 | `rtcbat.cpp/.h` | PCF85063 RTC + AXP2101 battery/PMU/PWR button |
 | `sdmon.cpp/.h` | SD sprite streaming + USB `PUT` file transfer |
@@ -228,6 +229,12 @@ that have each cost a real bug:
 - **A missing `gfx->flush()`.** `--shot` reads `gfx->buffer()` directly and
   never consults `frameReady`, so a frozen panel photographs perfectly. That is
   what `flush_test` is for.
+- **Light sleep.** `idleWait()` light-sleeps the chip with the screen off or
+  almost off, on battery (`power.h`). The emulator never sleeps, so whatever
+  must stay awake is guarded by hand there: the radio (`lan.live()`) and any
+  sound (`audioActive()`, which counts a cry going out). Anything new that
+  must run while nobody looks -- a timer, a radio, a transfer -- needs the same
+  guard, or it will stall on the board and nowhere else.
 - **The audio TASK.** The emulator stubs it, so a loop on core 0 that neither
   renders nor sleeps is invisible here and reboots the board through the task
   watchdog 5 s later (`task_wdt: CPU 0: audio`). It shipped in 3.21-3.23:

@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://tubiana.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v3.27-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v3.28-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/tubiana/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/tubiana/TamaPoke/stargazers)
@@ -802,6 +802,32 @@ type they specialise in -- rock, pool, electric, greenhouse, fire, ghost, ice --
 and every Champion fights in the grand hall. The arenas are drawn from scratch
 by `tools/gen_scenes.py`; any picture dropped into `tools/backs/` under the same
 name replaces one, and `tools/gen_backs.py` fits it to 240x112.
+
+## Battery
+
+Ported from upstream ([socquique/TamaPoke#25-27](https://github.com/socquique/TamaPoke/pull/26),
+by **ViezeVingertjes**); the policy is pure code in `power.h` and `batcurve.h`,
+driven by `power_test` and `batcurve_test`.
+
+- **The frame rate follows activity.** 10 fps in use; 6.7 fps after 1 min
+  untouched; 4 fps when the screen dims (90 s); 1 fps when it is almost off
+  (5 min); 2 fps while the creature sleeps untouched. Minigames keep 85 ms.
+  **Nothing is drawn with the screen off** (it used to redraw at 10 fps in the
+  dark). The creature walks by real time, so it is no slower at a low rate.
+- **Light sleep when nobody is looking**: screen off or almost off, on battery,
+  the CPU sleeps until the next frame or 200 ms, and a touch wakes it. Never on
+  USB (the serial port stays up), never with a LAN link open, never while a
+  sound plays.
+- **Low battery** (< 20 %, not charging): brightness capped at 100 (60 under
+  10 %) and frames twice as slow.
+- **The percentage comes from a LiPo curve** over a smoothed voltage, and only
+  falls while discharging, so it no longer jumps up just after unplugging. On USB
+  or charging the PMU's own gauge is used.
+- **Safe power-off**: when the smoothed voltage stays under **3.30 V for 30 s**
+  (not in the first 30 s after boot, not on USB) the game is saved and the PMU
+  powers off; the PMU itself cuts at 3.1 V as a backstop.
+- Sprites are drawn as runs of one colour (one `fillRect` per run, not per
+  pixel), and the loop yields between frames instead of spinning.
 
 ## Layout
 

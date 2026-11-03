@@ -20,6 +20,13 @@ This repository is the third link of a chain, and each link is someone's work:
 Each layer sits on the ones before it and would not exist without them. All
 three are MIT on the same terms as the original licence.
 
+Upstream keeps moving, and good work there is carried over: the battery and
+frame-rate work (`power.h`, `batcurve.h`, `blit.h` -- adaptive frame rate,
+light sleep, the LiPo gauge and safe power-off, sprites drawn as runs) is from
+**ViezeVingertjes**, [socquique/TamaPoke#25, #26 and #27](https://github.com/socquique/TamaPoke/pulls?q=is%3Apr+author%3AViezeVingertjes),
+ported and adapted here. Its `idleSince()` also fixed this fork's black blink
+on every touch.
+
 
 TamaPoke is a **non-commercial, personal-use** project. It does not sell or
 commercially redistribute any copyrighted material. Pokémon and all related

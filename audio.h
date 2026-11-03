@@ -51,3 +51,4 @@ void audioPlayPcm(int8_t *pcm, uint32_t len);
 void sfxPlay(uint8_t id);   // encola un efecto (no bloquea el loop)
 void audioSetEnabled(bool on);
 bool audioEnabled();
+bool audioActive();      // music, an effect or a cry still sounding: the CPU must not sleep

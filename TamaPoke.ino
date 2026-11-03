@@ -23,6 +23,13 @@
 #include "link.h"
 #include "linknow.h"
 #include "backs.h"
+#include "blit.h"
+#include "power.h"
+#include "batcurve.h"
+#if defined(ESP32)
+#include <esp_sleep.h>
+#include <driver/gpio.h>
+#endif
 #include "badges.h"
 #include "avatars.h"
 #include <stdarg.h>
@@ -37,7 +44,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "3.27"
+#define FW_VERSION "3.28"
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
   LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
@@ -1301,11 +1308,19 @@ void loop() {
     if (pwrShortPressed()) {
       screenOff = !screenOff;
       pet.setScreenOff(screenOff);   // asleep only if it is also night
-      if (!screenOff) lastInteract = now;
+      if (!screenOff) wakeUI();
     }
   }
 
   updateBrightness(now);
+
+  // The battery at its safe limit, with no USB: save the game and power the PMU
+  // off before the cell goes lower. The RTC keeps the time. (batcurve.h)
+  if (batShouldShutdown() && !usbPresent()) {
+    pet.flushSave();
+    panel->setBrightness(0);
+    batPowerOff();
+  }
 
   // vuelca el autoguardado periodico SOLO con la pantalla atenuada/apagada o
   // durmiendo: la escritura a NVS congela ~1s ambos cores (caché de flash off),
@@ -1332,27 +1347,93 @@ void loop() {
                   ESP.getFreeHeap(), ESP.getMinFreeHeap());
   }
 
-  // 85 ms en juego/saco: margen seguro para que el redibujado no pise el envio
-  // DMA del frame anterior (a 40-65 ms solapaba y causaba flashes negros; con
-  // sprites grandes el dibujo tarda mas, asi que se deja colchon)
-  if (now - lastRender >= (uint32_t)((gameOpen || sackOpen || spdOpen) ? 85 : 100)) {
+  // How often to draw comes from power.h: 10 fps in use, slower the longer it
+  // is left alone, 85 ms in a minigame, and NOTHING with the screen off -- at
+  // brightness 0 nothing shows, yet the full redraw and the 434 KB push over
+  // QSPI used to carry on at 10 fps, the largest avoidable load on the board.
+  // lastRender stays put, so the first frame after waking comes at once.
+  PowerCtx pc = powerCtx(now);
+  batSetPollMs(powerCacheMs(pc));
+  uint32_t interval = frameIntervalMs(pc);
+  bool drewFrame = false;
+  if (interval && now - lastRender >= interval) {
     lastRender = now;
     render();
+    drewFrame = true;
   }
+  // yield on passes that draw nothing: the loop used to spin flat out between
+  // frames. Touch is read every 20 ms and sound has its own task.
+  if (!drewFrame) idleWait(pc);
+}
+
+// What the power policy needs to know right now (power.h).
+PowerCtx powerCtx(uint32_t now) {
+  PowerCtx c;
+  c.idleMs = idleSince(now, lastInteract);
+  c.screenOff = screenOff;
+  c.sleeping = pet.sleeping;
+  c.gameOpen = gameOpen || sackOpen || spdOpen;
+  c.usb = usbPresent();
+  c.charging = batCharging();
+  c.batPct = batPercent();
+  return c;
+}
+
+// The player did something: back to the normal frame rate at once, rather
+// than after the next frame of a slow one. A forced frame still keeps 85 ms
+// from the last.
+void wakeUI() {
+  uint32_t now = millis();
+  uint32_t iv = frameIntervalMs(powerCtx(now));
+  bool slow = !iv || iv > 100;
+  lastInteract = now;
+  if (slow) lastRender = (now - lastRender >= 85) ? 0 : lastRender - 15;
+}
+
+// The pause on a pass that drew nothing. With the screen off, or almost off,
+// and no USB, the CPU light-sleeps until the next frame or 200 ms; a touch
+// (the touch INT going low) wakes it. Never with the radio link up -- ESP-NOW
+// needs the radio awake -- and never while a sound plays. USB is read uncached
+// first, in case it was just plugged in.
+void idleWait(PowerCtx c) {
+#if defined(ESP32)
+  if (lightSleepAllowed(c) && !lan.live() && !audioActive() && millis() - lastRender >= 100) {
+    c.usb = usbPresentNow();
+    if (!lightSleepAllowed(c)) { delay(idleDelayMs(c)); return; }
+    if (digitalRead(TP_INT) == LOW) { gTouchIrq = true; delay(1); return; }   // a touch pending
+    uint32_t ms = POWER_SLEEP_MS;
+    uint32_t iv = frameIntervalMs(c);
+    if (iv) {      // screen on: sleep until the next frame is due
+      uint32_t due = lastRender + iv - millis();
+      if ((int32_t)due < (int32_t)ms) ms = (int32_t)due > 1 ? due : 1;
+    }
+    esp_sleep_enable_timer_wakeup((uint64_t)ms * 1000);
+    gpio_wakeup_enable((gpio_num_t)TP_INT, GPIO_INTR_LOW_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+    esp_light_sleep_start();
+    // the touch interrupt goes back to an edge, as attachInterrupt left it; a
+    // touch that already pulled the line low is recorded by hand
+    gpio_wakeup_disable((gpio_num_t)TP_INT);
+    gpio_set_intr_type((gpio_num_t)TP_INT, GPIO_INTR_NEGEDGE);
+    if (digitalRead(TP_INT) == LOW) gTouchIrq = true;
+    return;
+  }
+#endif
+  delay(idleDelayMs(c));
 }
 
 // brillo segun sueno + inactividad (proteccion del AMOLED)
 void updateBrightness(uint32_t now) {
   // los eventos visibles despiertan la pantalla solos
-  if (pet.evolving() || pet.ceremony || pet.eating() || pet.showHeart()) {
-    lastInteract = now;
+  if (!screenOff && (pet.evolving() || pet.ceremony || pet.eating() || pet.showHeart())) {
+    if (dimStageFor(idleSince(now, lastInteract)) != DIM_AWAKE) wakeUI();
+    else lastInteract = now;
   }
-  uint32_t idle = now - lastInteract;
-  dimStage = (idle > 300000) ? 2 : (idle > 90000) ? 1 : 0;
-  uint8_t target = pet.sleeping ? 25 : (usbPresent() ? 180 : 145);
-  if (dimStage == 1) target = pet.sleeping ? 10 : 60;
-  else if (dimStage == 2) target = 8;
-  if (screenOff) target = 0;
+  // idleSince(), not `now - lastInteract`: a touch stamped after `now` was read
+  // made that wrap to ~49 days, and the panel blinked to 8 on every touch
+  PowerCtx c = powerCtx(now);
+  dimStage = dimStageFor(c.idleMs);
+  uint8_t target = brightnessFor(c);
   static uint8_t current = 255;
   if (target != current) {
     current = target;
@@ -1745,7 +1826,7 @@ void handleTouch() {
   // saco de entrenamiento: cada toque cuenta al instante (aporrear rapido)
   if (sackOpen) {
     if (pressed && !wasPressed) {
-      lastInteract = millis();
+      wakeUI();
       if (y < 72) leaveSack();       // tocar arriba = salir, conservando lo ganado
       else sackTap();
     }
@@ -1761,7 +1842,7 @@ void handleTouch() {
     swallowGesture = (dimStage > 0) || screenOff;  // si estaba a oscuras, solo despierta
     if (screenOff) pet.setScreenOff(false);        // waking the screen wakes it
     screenOff = false;
-    lastInteract = millis();
+    wakeUI();
   } else if (pressed) {  // sigue apoyado
     tXl = x;
     tYl = y;
@@ -1783,7 +1864,7 @@ void handleTouch() {
       holdFired = true;
     }
   } else if (wasPressed) {  // levanta el dedo: resolver gesto
-    lastInteract = millis();
+    wakeUI();
     int dx = tXl - tX0, dy = tYl - tY0;
     uint32_t dt = millis() - tStart;
     if (!holdFired && !swallowGesture) {
@@ -3400,12 +3481,11 @@ void renderGame() {
     uint16_t fi = (millis() / fm) % mon.frames;
     const uint8_t *fr = mon.data + (uint32_t)fi * mon.w * mon.h;
     int px = (int)gamePetX - w / 2, py = 394 - h;
-    for (int r = 0; r < mon.h; r++)
-      for (int c = 0; c < mon.w; c++) {
-        uint8_t idx = fr[r * mon.w + c];
-        if (idx == 0xFF) continue;
-        gfx->fillRect(px + c * s, py + r * s, s, s, mon.pal[idx]);
-      }
+    for (int r = 0; r < mon.h; r++) {
+      const uint8_t *row = fr + r * mon.w;
+      forRuns(mon.w, [&](int c) { return indexedKey(row[c], false); },
+              [&](int c0, int len, int k) { gfx->fillRect(px + c0 * s, py + r * s, len * s, s, mon.pal[k]); });
+    }
   }
 
   // anillo de impacto que se expande y desvanece (feedback suave del golpe)
@@ -7162,12 +7242,12 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
   int ox = x + (GAL_CELL - w * s) / 2;
   int oy = y + (GAL_CELL - h * s) / 2;
   for (int r = 0; r < h; r++) {
-    for (int c = 0; c < w; c++) {
-      uint8_t idx = d[r * w + c];
-      if (idx == 0xFF) continue;
-      uint16_t col = sil ? INK_K : (uint16_t)(pal[idx * 2] | (pal[idx * 2 + 1] << 8));
-      gfx->fillRect(ox + c * s, oy + r * s, s, s, col);
-    }
+    const uint8_t *row = d + r * w;
+    forRuns(w, [&](int c) { return indexedKey(row[c], sil); },
+            [&](int c0, int len, int k) {
+              uint16_t col = sil ? INK_K : (uint16_t)(pal[k * 2] | (pal[k * 2 + 1] << 8));
+              gfx->fillRect(ox + c0 * s, oy + r * s, len * s, s, col);
+            });
   }
 }
 
@@ -7745,11 +7825,8 @@ void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool
   int x0 = cx - a.w * s / 2, y0 = groundY - (a.base ? a.base : a.h) * s;
   for (int r = 0; r < a.h; r++) {
     const uint8_t *row = fr + r * a.w;
-    for (int c = 0; c < a.w; c++) {
-      uint8_t idx = row[c];
-      if (idx == 0xFF) continue;
-      gfx->fillRect(x0 + c * s, y0 + r * s, s, s, sil ? INK_K : m.pal[idx]);
-    }
+    forRuns(a.w, [&](int c) { return indexedKey(row[c], sil); },
+            [&](int c0, int len, int k) { gfx->fillRect(x0 + c0 * s, y0 + r * s, len * s, s, sil ? INK_K : m.pal[k]); });
   }
 }
 void drawPmdAct(uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS) {
@@ -7809,13 +7886,23 @@ void drawPetPMD() {
   } else {
     // contento: el planificador decide (idle / paseo / gesto)
     if (now > beh.until) behNext();
+    static uint32_t walkLast = 0;          // the last walking step (0 = none yet)
+    if (beh.mode != 1) walkLast = 0;       // standing still is not counted as walking
     if (beh.mode == 1) {
       float d = beh.targetX - beh.x;
       if (fabsf(d) < 4) {
         behNext();
         act = PMD_IDLE;
       } else {
-        beh.x += (d > 0 ? 3.0f : -3.0f);
+        // 30 px/s (3 px a frame at 10 fps) measured in real time, so it walks
+        // as fast at the slower idle frame rates; a long gap (another screen
+        // in between) is not one long stride
+        uint32_t dt = walkLast ? now - walkLast : 100;
+        if (dt > 1100) dt = 1100;
+        walkLast = now;
+        float step = 30.0f * dt / 1000.0f;
+        if (step > fabsf(d)) step = fabsf(d);
+        beh.x += d > 0 ? step : -step;
         act = (d > 0) ? PMD_WALKR : PMD_WALKL;
       }
     } else {
@@ -7849,11 +7936,8 @@ void drawPetSD() {
   const uint8_t *fr = mon.data + (uint32_t)fi * mon.w * mon.h;
   for (int r = 0; r < mon.h; r++) {
     const uint8_t *row = fr + r * mon.w;
-    for (int c = 0; c < mon.w; c++) {
-      uint8_t idx = row[c];
-      if (idx == 0xFF) continue;
-      gfx->fillRect(x + c * s, y + r * s, s, s, sil ? INK_K : mon.pal[idx]);
-    }
+    forRuns(mon.w, [&](int c) { return indexedKey(row[c], sil); },
+            [&](int c0, int len, int k) { gfx->fillRect(x + c0 * s, y + r * s, len * s, s, sil ? INK_K : mon.pal[k]); });
   }
 
   // emotes en vez de expresiones (los sprites importados no tienen anclas)
@@ -7959,10 +8043,8 @@ void drawAvatar(uint8_t which, int x, int y, int s) {
 
 void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette) {
   for (int r = 0; r < n; r++) {
-    for (int c = 0; c < n; c++) {
-      char ch = map[r][c];
-      if (ch == '.') continue;
-      gfx->fillRect(x + c * s, y + r * s, s, s, silhouette ? INK_K : spriteColor(ch));
-    }
+    const char *row = map[r];
+    forRuns(n, [&](int c) { return charKey(row[c], silhouette); },
+            [&](int c0, int len, int k) { gfx->fillRect(x + c0 * s, y + r * s, len * s, s, silhouette ? INK_K : spriteColor((char)k)); });
   }
 }
