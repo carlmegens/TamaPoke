@@ -351,6 +351,9 @@ bool gymHard = false;   // which ladder the list is showing
 // LAN battle. `lanOpen` is the pairing screen; once both squads are known the
 // normal battle screen takes over with btlLink set.
 bool lanOpen = false;
+bool tradeOpen = false;          // the trade screen, inside the LAN screen
+bool tradePicking = true;        // choosing who to offer, or looking at the deal
+uint8_t tradePage = 0;
 Link lan;
 // What the shared region chooser is being used FOR. It only changes the
 // subtitle and whether there is a way back: at first boot every count would
@@ -1254,6 +1257,7 @@ void loop() {
   if (lan.live()) {
     linkNowPoll();
     lan.tick(now);
+    tradePoll();       // a struck deal finishes whatever screen is up
   }
 
   // avisa con un sonido cuando el bicho pasa a estar listo para evolucionar
@@ -1893,6 +1897,7 @@ void onSwipeV(int dir) {
     return;
   }
   if (pickOpen) { pickOpen = false; return; }
+  if (lanOpen && tradeOpen) { tradeClose(); return; }   // back to the LAN screen, still paired
   if (lanOpen) { lanLeave(); lanOpen = false; return; }
   if (gymOpen) {
     // Same gesture as the Pokedex: vertical changes region, horizontal pages.
@@ -2266,6 +2271,7 @@ void onSwipe(int dir) {
     if (expPlace >= 0) expPlace = -1; else closeExplore();
     return;
   }
+  if (lanOpen && tradeOpen) { tradeSwipe(dir); return; }   // pages who can be offered
   if (pickOpen) {   // horizontal pages the candidates, as everywhere else
     uint8_t pages = (pickCandidates() + PICK_PER_PAGE - 1) / PICK_PER_PAGE;
     if (!pages) pages = 1;
@@ -5324,6 +5330,14 @@ static void renderPlayerBadges() {
   gfx->setTextSize(3);
   gfx->setCursor(CX - (int)strlen(tn) * 9, 40);
   gfx->print(tn);
+  // A pencil after the name: the tap that renames was there all along, and
+  // nothing on screen said so. Only on page 0, the one the tap is wired to.
+  if (playerBadgeRegion == 0) {
+    int px = CX + (int)strlen(tn) * 9 + 10, py = 40;
+    for (int k = 0; k < 4; k++) gfx->drawLine(px + 3 + k, py + 18, px + 15 + k, py + 4, UI_BAR_WARN);
+    gfx->fillTriangle(px, py + 22, px + 3, py + 15, px + 7, py + 19, UI_INK);   // the point
+    gfx->fillRect(px + 15, py + 1, 4, 4, UI_BAR_BAD);                           // the rubber
+  }
 
   // Pages 1 and 2 are the other regions' ladders: name them, and drop the
   // avatar so the badges have the room. Only page 0 is "you".
@@ -5752,6 +5766,10 @@ void pickTap(int16_t x, int16_t y) {
 // protocol does the rest. There is no MAC entry because there is no keyboard
 // worth typing one on.
 void renderLan() {
+  if (tradeOpen) {
+    if (!lan.ready()) tradeOpen = false;      // the link went: back to say so
+    else { renderTrade(); return; }
+  }
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   gfx->setTextColor(UI_INK);
@@ -5806,6 +5824,11 @@ void renderLan() {
     gfx->setTextColor(UI_BG_DAY);
     gfx->setCursor(CX - strlen(T(S_FIGHT)) * 6, 240);
     gfx->print(T(S_FIGHT));
+    gfx->fillRoundRect(120, 290, 226, 56, 12, UI_BAR_WARN);
+    gfx->drawRoundRect(120, 290, 226, 56, 12, UI_INK);
+    gfx->setTextColor(UI_WHITE);
+    gfx->setCursor(CX - strlen(T(S_TRADE)) * 6, 310);
+    gfx->print(T(S_TRADE));
   } else if (lan.state == LINK_DONE) {
     // Both squads are still in hand on both devices, so going again costs one
     // packet -- there is nothing to re-exchange.
@@ -5827,6 +5850,245 @@ void renderLan() {
   gfx->setCursor(CX - strlen(T(S_BACK)) * 6, 392);
   gfx->print(T(S_BACK));
   gfx->flush();
+}
+
+// ---------- trading ----------
+// One creature for one, over a READY link, from the LAN screen's TRADE button.
+// The protocol's half (who holds what, when) is in link.h; this is the
+// screen, and the one place a trade touches the party: tradePoll().
+
+int8_t tradeSrc = -1;            // what we offered: 0..5 party, 6.. box
+bool tradeStored = false;        // theirs is in our party or box
+char tradeMsg[48] = "";
+#define TRADE_PER_PAGE 6
+#define TRADE_CELL_X(i) (73 + ((i) % 3) * 110)
+#define TRADE_CELL_Y(i) (104 + ((i) / 3) * 112)
+#define TRADE_BTN_Y 300
+#define TRADE_BTN_H 46
+
+// Who can be offered: everyone in the party, then the box. Never the live
+// creature -- it is alive, not a record.
+uint8_t tradeCands(int8_t *out) {
+  uint8_t n = 0;
+  for (int i = 0; i < PARTY_SLOTS; i++) if (!party.slots[i].empty()) out[n++] = (int8_t)i;
+  for (int i = 0; i < BOX_SLOTS; i++) if (!party.box[i].empty()) out[n++] = (int8_t)(PARTY_SLOTS + i);
+  return n;
+}
+static PartyMon *tradeMonAt(int8_t src) {
+  if (src < 0) return nullptr;
+  return src < PARTY_SLOTS ? &party.slots[src] : &party.box[src - PARTY_SLOTS];
+}
+uint8_t tradePages() {
+  int8_t c[PARTY_SLOTS + BOX_SLOTS];
+  uint8_t n = tradeCands(c);
+  return n ? (uint8_t)((n + TRADE_PER_PAGE - 1) / TRADE_PER_PAGE) : 1;
+}
+static bool tradeRoom() { return party.firstFree() >= 0 || party.boxFirstFree() >= 0; }
+
+void tradeOpenScreen() {
+  lan.tradeReset();
+  tradeOpen = true;
+  tradePicking = true;
+  tradePage = 0;
+  tradeSrc = -1;
+  tradeStored = false;
+  tradeMsg[0] = 0;
+}
+
+// Leaving the trade screen. Before the deal is struck it simply withdraws; once
+// theirs is stored here (phase 1) there is nothing left to undo, and tradePoll()
+// still finishes the job from loop() whatever screen is up.
+void tradeClose() {
+  if (!lan.tPhase) lan.tradeWithdraw();
+  tradeOpen = false;
+}
+
+// Runs every pass the link is up, not only while the trade screen shows, so a
+// deal finishes even if the player has walked away from it.
+//   1. theirs arrived: store it (evolving if it trade-evolves), into the
+//      Pokedex, the party or else the box;
+//   2. they have stored ours: only now is ours given up.
+// That order is the "never lose a creature" rule -- see link.h.
+void tradePoll() {
+  if (lan.tArrived) {
+    lan.tArrived = false;
+    PartyMon m = lan.tTheirs;
+    int16_t from = m.dex, evo = tradeEvolution(m.dex);
+    pet.registerCaught(from, m.shiny);
+    if (evo) { m.dex = evo; pet.registerCaught(evo, m.shiny); }
+    tradeStored = party.add(m) || party.boxAdd(m);
+    if (evo) snprintf(tradeMsg, sizeof(tradeMsg), T(S_EVOLVED_FMT), dexName(from), dexName(evo));
+    else snprintf(tradeMsg, sizeof(tradeMsg), T(S_TRADE_DONE_FMT), m.nick[0] ? m.nick : dexName(m.dex));
+    Serial.printf("trade: got %s (dex %d)%s -- %s\n", DEX_TBL[m.dex].name, m.dex,
+                  evo ? " evolved on arrival" : "", tradeStored ? "stored" : "NO ROOM");
+    cryPlay(m.dex);
+  }
+  if (lan.tPhase == 1 && lan.tPeerDone && tradeStored) {
+    PartyMon *mine = tradeMonAt(tradeSrc);
+    // the record we offered, still where it was: released, and the deal is done
+    if (mine && mine->dex == lan.tMine.dex) {
+      if (tradeSrc < PARTY_SLOTS) party.releaseAt((uint8_t)tradeSrc);
+      else party.boxReleaseAt((uint8_t)(tradeSrc - PARTY_SLOTS));
+    }
+    Serial.printf("trade: gave %s (dex %d)\n", DEX_TBL[lan.tMine.dex].name, lan.tMine.dex);
+    lan.tPhase = 2;
+    tradeSrc = -1;
+  }
+}
+
+static void tradeCard(const PartyMon &m, int cx, int y) {
+  const uint8_t *t = thumbs.get(m.dex);
+  if (t) drawThumb(t, cx - GAL_CELL / 2, y, 2, false);
+  const char *nm = m.nick[0] ? m.nick : dexName(m.dex);
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(1);
+  gfx->setCursor(cx - (int)strlen(nm) * 3, y + 84);
+  gfx->print(nm);
+  char lv[24];
+  snprintf(lv, sizeof(lv), T(S_NAME_FMT), m.shiny ? "*" : "", "", (unsigned)m.level);
+  gfx->setCursor(cx - (int)strlen(lv) * 3, y + 96);
+  gfx->print(lv);
+}
+
+static void tradeButton(int x, int w, const char *l, bool live, uint16_t col) {
+  gfx->fillRoundRect(x, TRADE_BTN_Y, w, TRADE_BTN_H, 12, live ? col : UI_TRACK);
+  gfx->drawRoundRect(x, TRADE_BTN_Y, w, TRADE_BTN_H, 12, UI_INK);
+  gfx->setTextColor(live ? UI_WHITE : 0x8410);
+  gfx->setTextSize(2);
+  gfx->setCursor(x + w / 2 - (int)strlen(l) * 6, TRADE_BTN_Y + 16);
+  gfx->print(l);
+}
+
+// The two OK/CHANGE buttons, in one place for the draw and the tap.
+static bool tradeCanChange() { return !lan.tPhase && !lan.tIAccepted; }
+static bool tradeCanOk() {
+  if (lan.tPhase == 2) return true;                 // "done": back to choosing
+  return !lan.tPhase && lan.tradeHasTheirs() && !lan.tIAccepted && tradeRoom();
+}
+
+void renderTrade() {
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(CX - (int)strlen(T(S_TRADE)) * 6, 40);
+  gfx->print(T(S_TRADE));
+  if (lan.peerName[0]) {
+    gfx->setTextColor(UI_TRACK);
+    gfx->setTextSize(1);
+    gfx->setCursor(CX - (int)strlen(lan.peerName) * 3, 64);
+    gfx->print(lan.peerName);
+  }
+
+  if (tradePicking) {
+    int8_t c[PARTY_SLOTS + BOX_SLOTS];
+    uint8_t n = tradeCands(c);
+    const char *hint = n ? T(S_TRADE_PICK) : T(S_TRADE_NONE);
+    gfx->setTextColor(UI_INK);
+    gfx->setTextSize(1);
+    gfx->setCursor(CX - (int)strlen(hint) * 3, 82);
+    gfx->print(hint);
+    for (uint8_t i = 0; i < TRADE_PER_PAGE; i++) {
+      uint8_t k = tradePage * TRADE_PER_PAGE + i;
+      if (k >= n) break;
+      int x = TRADE_CELL_X(i), y = TRADE_CELL_Y(i);
+      gfx->drawRoundRect(x, y, 100, 106, 10, UI_TRACK);
+      tradeCard(*tradeMonAt(c[k]), x + 50, y + 2);
+    }
+    uint8_t pages = tradePages();
+    if (pages > 1) {
+      char pg[12];
+      snprintf(pg, sizeof(pg), "%u/%u", (unsigned)tradePage + 1, (unsigned)pages);
+      gfx->setTextColor(UI_TRACK);
+      gfx->setTextSize(2);
+      gfx->setCursor(CX - (int)strlen(pg) * 6, 336);
+      gfx->print(pg);
+    }
+  } else {
+    // the deal: ours on the left, theirs on the right
+    const char *hd[2] = { T(S_TRADE_GIVE), T(S_TRADE_GET) };
+    for (int s = 0; s < 2; s++) {
+      int x = s ? 240 : 46;
+      gfx->drawRoundRect(x, 82, 180, 136, 14, s ? UI_BAR_OK : UI_INK);
+      gfx->setTextColor(UI_INK);
+      gfx->setTextSize(1);
+      gfx->setCursor(x + 90 - (int)strlen(hd[s]) * 3, 88);
+      gfx->print(hd[s]);
+    }
+    tradeCard(lan.tMine, 136, 100);
+    if (lan.tradeHasTheirs()) tradeCard(lan.tTheirs, 330, 100);
+    else {
+      gfx->setTextColor(UI_TRACK);
+      gfx->setTextSize(4);
+      gfx->setCursor(330 - 12, 140);
+      gfx->print("?");
+    }
+    const char *st = "";
+    uint16_t sc = UI_INK;
+    if (lan.tPhase) st = tradeMsg;
+    else if (!tradeRoom()) { st = T(S_PARTY_FULL); sc = UI_BAR_BAD; }
+    else if (lan.tIAccepted) st = T(S_TRADE_WAIT);
+    else if (lan.tPeerAccepted) { st = T(S_TRADE_THEYOK); sc = UI_BAR_OK; }
+    gfx->setTextColor(sc);
+    gfx->setTextSize(1);
+    gfx->setCursor(CX - (int)strlen(st) * 3, 268);
+    gfx->print(st);
+    if (lan.tPhase == 1 && !lan.tPeerDone) {
+      gfx->setCursor(CX - (int)strlen(T(S_TRADE_WAIT)) * 3, 282);
+      gfx->print(T(S_TRADE_WAIT));
+    }
+    tradeButton(70, 150, T(S_TRADE_CHANGE), tradeCanChange(), UI_BAR_WARN);
+    tradeButton(246, 150, "OK", tradeCanOk(), UI_BAR_OK);
+  }
+  gfx->setTextColor(UI_TRACK);
+  gfx->setTextSize(2);
+  gfx->setCursor(CX - strlen(T(S_BACK)) * 6, 392);
+  gfx->print(T(S_BACK));
+  gfx->flush();
+}
+
+void tradeTap(int16_t x, int16_t y) {
+  if (y > 370) { sfxPlay(SFX_TAP); tradeClose(); return; }      // back
+  if (tradePicking) {
+    int8_t c[PARTY_SLOTS + BOX_SLOTS];
+    uint8_t n = tradeCands(c);
+    for (uint8_t i = 0; i < TRADE_PER_PAGE; i++) {
+      uint8_t k = tradePage * TRADE_PER_PAGE + i;
+      if (k >= n) break;
+      int cx = TRADE_CELL_X(i), cy = TRADE_CELL_Y(i);
+      if (x < cx || x > cx + 100 || y < cy || y > cy + 106) continue;
+      sfxPlay(SFX_TAP);
+      tradeSrc = c[k];
+      lan.tradeOffer(*tradeMonAt(c[k]));
+      tradePicking = false;
+      return;
+    }
+    return;
+  }
+  if (y < TRADE_BTN_Y - 6 || y > TRADE_BTN_Y + TRADE_BTN_H + 6) return;
+  if (x >= 64 && x <= 226) {                                     // CHANGE
+    if (!tradeCanChange()) { sfxPlay(SFX_DENY); return; }
+    sfxPlay(SFX_TAP);
+    lan.tradeWithdraw();
+    tradeSrc = -1;
+    tradePicking = true;
+  } else if (x >= 240 && x <= 402) {                             // OK
+    if (!tradeCanOk()) { sfxPlay(SFX_DENY); return; }
+    sfxPlay(SFX_TAP);
+    if (lan.tPhase == 2) tradeOpenScreen();                      // done: another?
+    else lan.tradeAccept();
+  }
+}
+
+// a horizontal swipe pages the candidates, and never closes the screen
+bool tradeSwipe(int dir) {
+  if (!tradePicking) return true;
+  int p = (int)tradePage + (dir > 0 ? -1 : 1);
+  uint8_t pages = tradePages();
+  if (p < 0) p = pages - 1;
+  if (p >= pages) p = 0;
+  tradePage = (uint8_t)p;
+  return true;
 }
 
 // Hands our chosen squad to the link, then announces.
@@ -5863,6 +6125,7 @@ static void lanOffer(bool host) {
 }
 
 void lanTap(int16_t x, int16_t y) {
+  if (tradeOpen) { tradeTap(x, y); return; }
   if (lan.state == LINK_OFF || lan.state == LINK_REFUSED ||
       lan.state == LINK_LOST) {
     for (int i = 0; i < 2; i++) {
@@ -5883,6 +6146,11 @@ void lanTap(int16_t x, int16_t y) {
       sfxPlay(SFX_TAP);
       lanOpen = false;
       startLinkBattle();
+      return;
+    }
+    if (x >= 120 && x <= 346 && y >= 290 && y <= 346) {
+      sfxPlay(SFX_TAP);
+      tradeOpenScreen();
       return;
     }
   } else if (lan.state == LINK_DONE) {

@@ -18,6 +18,7 @@ void setup(); void render(); void onSwipe(int dir); void onSwipeV(int dir);
 extern Pet pet;
 extern bool cardOpen, galleryOpen, clockOpen, kbOpen, menuOpen, partyOpen, partyPick;
 extern bool trainOpen, movePickOpen, battleOpen, gymOpen, playerOpen, boxOpen, pickOpen;
+extern bool lanOpen, tradeOpen, tradePicking; extern uint8_t tradePage;
 extern uint8_t cardPage, gymPage, playerPage, movePickPage, boxPage, pickPage, partyDetail;
 extern uint8_t settingsPage;
 extern int galleryPage; extern bool galleryDirty; extern uint8_t galleryDetail;
@@ -45,6 +46,7 @@ static void clearAll(){
   gymPick=galleryPick=false;
   cardOpen=galleryOpen=clockOpen=kbOpen=menuOpen=partyOpen=partyPick=false;
   trainOpen=movePickOpen=battleOpen=gymOpen=playerOpen=boxOpen=pickOpen=false;
+  lanOpen=tradeOpen=false;
   partyDetail=0; boxSel=boxSwapFrom=0;
 }
 // swipe left; the page must advance and the screen must stay open
@@ -78,6 +80,8 @@ int main(){
                                                   check("movepick", &movePickOpen, &movePickPage);
   clearAll(); pickTrainer=7; pickHard=false; pickDefault(squadCap(7,false)); pickOpen=true;
                                                   check("teampick", &pickOpen,     &pickPage);
+  clearAll(); lanOpen=true; tradeOpen=true; tradePicking=true;
+                                                  check("trade",    &tradeOpen,    &tradePage);
   // The Pokedex pages within ONE region and changes region on a vertical swipe.
   // Every species must be reachable: it was capped at 10 flat pages when the dex
   // was 151 long, which silently hid everything past 160 once it grew to 386.
