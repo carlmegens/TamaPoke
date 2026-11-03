@@ -183,7 +183,7 @@ class Doc:
 
 # ---------- the manual ----------
 def build(lang, T):
-    L = 1 if lang == 'en' else 2
+    L = {'en': 1, 'fr': 2, 'de': 3}[lang]     # the firmware's Lang: LANG_EN, LANG_FR, LANG_DE
     path = os.path.join(OUT, T['file'])
     d = Doc(path, lang, T)
     c = d.c
@@ -441,6 +441,7 @@ def build(lang, T):
     d.save()
     print('wrote', path, d.page, 'pages')
 
-from texts import EN, FR
+from texts import EN, FR, DE
 build('en', EN)
 build('fr', FR)
+build('de', DE)

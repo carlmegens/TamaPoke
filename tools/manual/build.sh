@@ -31,7 +31,7 @@ SCENES="region starter egg main feed sleep menu card1 card2 train player sticker
         clock date options birthday explmap explscene explocean explvolcano wild caught keep dexbox sheetxp"
 cd "$WORK"
 for s in $SCENES; do
-  for l in 1 2; do                       # LANG_EN, LANG_FR
+  for l in 1 2 3; do                     # LANG_EN, LANG_FR, LANG_DE
     rm -rf tamapoke* ./*.nvs             # every capture starts from a fresh save
     ./cap "$s" "$l" "shots/${s}_$l.ppm" "$WORK/sd/mons" >/dev/null
   done

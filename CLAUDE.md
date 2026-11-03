@@ -26,7 +26,7 @@ Personal, non-commercial fan project. Code MIT; sprites CC BY-NC (PMD SpriteColl
 | `pin_config.h` | Board pinout — from the official Waveshare repo, don't invent values |
 | `tools/*.py` | Sprite pipeline (PMD fetch/pack, thumbs, bundle, USB send); `pack_cries.py` builds the optional cries pack |
 | `tools/emu/` | Desktop emulator: runs the real firmware in an SDL window |
-| `manual/` + `tools/manual/` | The kids' manual, EN + FR PDFs. `build.sh` captures every screen from the REAL sketch (`cap.cpp`, emulator stubs, Kanto sprites unpacked from `web/`) and lays it out (`build.py`); the words are in `texts.py`. Marker positions are panel coordinates, so a moved button needs its marker moved too |
+| `manual/` + `tools/manual/` | The kids' manual, EN + FR + DE PDFs. `build.sh` captures every screen from the REAL sketch (`cap.cpp`, emulator stubs, Kanto sprites unpacked from `web/`) and lays it out (`build.py`); the words are in `texts.py`. Marker positions are panel coordinates, so a moved button needs its marker moved too |
 | `web/` | ESP Web Tools installer page + prebuilt `tamapoke.bin` + `sprites-<region>.pak` (committed: release assets have no CORS) |
 
 ## Build & flash
