@@ -23,6 +23,7 @@ static I2SClass i2s;
 static bool gReady = false;
 static bool gOn = true;
 static QueueHandle_t gQ = nullptr;
+static volatile bool gPcmPlaying = false;   // a cry is going out right now
 
 // One queue for effects AND cries, so they play in the order they were asked
 // for: the hatch jingle, then the creature that hatched.
@@ -222,7 +223,9 @@ static void audioTask(void *) {
         // they were, the same as under an effect.
         if (gOn && gReady) {
           if (!ampOn) { digitalWrite(PA, HIGH); delay(6); ampOn = true; }
+          gPcmPlaying = true;
           playPcm(msg.pcm, msg.len);
+          gPcmPlaying = false;
         }
         free(msg.pcm);
         continue;
@@ -320,3 +323,7 @@ void audioSetEnabled(bool on) {
   p.end();
 }
 bool audioEnabled() { return gOn; }
+
+bool audioActive() {
+  return gPcmPlaying || gMusic != MUS_NONE || gSyn.busy() || (gQ && uxQueueMessagesWaiting(gQ) > 0);
+}

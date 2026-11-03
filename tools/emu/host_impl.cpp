@@ -127,6 +127,10 @@ void pmuEnablePanel() {}
 int batPercent() { return 87; }
 bool batCharging() { return false; }
 bool usbPresent() { return true; }
+bool usbPresentNow() { return true; }
+void batSetPollMs(uint32_t) {}
+bool batShouldShutdown() { return false; }
+void batPowerOff() {}
 void pwrSetup() {}
 bool pwrShortPressed() { return false; }
 
@@ -166,6 +170,7 @@ void audioSetVolume(uint8_t v) { g_emuVol = v > 10 ? 10 : v; }
 uint8_t audioVolume() { return g_emuVol; }
 void audioSetEnabled(bool on) { (void)on; }
 bool audioEnabled() { return true; }
+bool audioActive() { return false; }
 
 // Why the last run ended. The tests link this file but not main_sdl.cpp, so the
 // state lives here and the GUI sets it after reading a simulated crash.

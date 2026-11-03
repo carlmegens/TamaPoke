@@ -50,12 +50,12 @@ CORE=("$ROOT/gbsynth.cpp" "$ROOT/pet.cpp" "$ROOT/i18n.cpp" "$ROOT/party.cpp" "$R
 FLAGS=(-std=c++17 -O1 -w -I"$EMU" -I"$ROOT" -DSPRITE_DIR="\"$ROOT/tools/sdcard/mons\"")
 
 # these drive setup()/loop()/render(), so they need the sketch itself
-needs_sketch() { case "$1" in home_test|adopt_test|exploreflow_test|xp_test|explore_test|arena_test|touch_test|flush_test|joy_test|anim_test|swipe_test|lan_test|console_test|hit_test|starter_test|release_test|cry_test|quiz_test|learn_test|birthday_test|date_test|sound_test) return 0;; *) return 1;; esac; }
+needs_sketch() { case "$1" in power_test|home_test|adopt_test|exploreflow_test|xp_test|explore_test|arena_test|touch_test|flush_test|joy_test|anim_test|swipe_test|lan_test|console_test|hit_test|starter_test|release_test|cry_test|quiz_test|learn_test|birthday_test|date_test|sound_test) return 0;; *) return 1;; esac; }
 
 # and these are standalone: gbsynth.cpp has no Arduino dependency at all, which
 # is the point of it -- linking the game core in would only demand stubs for
 # symbols the test never calls.
-standalone() { case "$1" in synth_test|loud_test) return 0;; *) return 1;; esac; }
+standalone() { case "$1" in synth_test|loud_test|batcurve_test|blit_test) return 0;; *) return 1;; esac; }
 
 # sprite_test drives PmdMon straight off the sprite directory, so it needs the
 # host's SD stubs but none of the sketch

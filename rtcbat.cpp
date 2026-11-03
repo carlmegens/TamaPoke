@@ -1,3 +1,4 @@
+#include "batcurve.h"
 #include "rtcbat.h"
 #include "pin_config.h"  // define XPOWERS_CHIP_AXP2101
 #include <Wire.h>
@@ -42,8 +43,10 @@ void rtcSetEpoch(uint32_t e) {
 
 bool batBegin() {
   pmuOk = pmu.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
-  if (!pmuOk) Serial.println("AXP2101 no detectado");
-  return pmuOk;
+  if (!pmuOk) { Serial.println("AXP2101 no detectado"); return false; }
+  pmu.enableBattVoltageMeasure();
+  pmu.setSysPowerDownVoltage(BAT_HW_CUTOFF_MV);   // the backstop if the firmware is too late
+  return true;
 }
 
 // Enciende la alimentacion de la AMOLED. En la Waveshare 1.75 el panel (OLED VDD)
@@ -65,19 +68,43 @@ static uint32_t powerCacheT = 0;
 static int cachedPct = -1;
 static bool cachedCharging = false, cachedUsb = true;
 
+static uint32_t pollMs = 2000;
+void batSetPollMs(uint32_t ms) { pollMs = ms; }
+
+static BatMonitor mon;
+static bool monDischarging = false;
+
 static void refreshPower() {
   uint32_t now = millis();
-  if (powerCacheT && now - powerCacheT < 2000) return;
+  if (powerCacheT && now - powerCacheT < pollMs) return;
   powerCacheT = now ? now : 1;
   if (!pmuOk) { cachedPct = -1; cachedCharging = false; cachedUsb = true; return; }
-  cachedPct = pmu.isBatteryConnect() ? pmu.getBatteryPercent() : -1;
+  bool conn = pmu.isBatteryConnect();
   cachedCharging = pmu.isCharging();
   cachedUsb = pmu.isVbusIn();
+  // Discharging, the percent comes from a LiPo curve (batcurve.h): the PMU's
+  // own gauge reads high right after unplugging. On USB or charging the
+  // voltage is lifted by the charger and means nothing, so the PMU's is used.
+  bool discharging = conn && !cachedUsb && !cachedCharging;
+  if (discharging != monDischarging) {
+    mon.reset();
+    mon.seed(cachedPct);   // unplugging never RAISES the percent
+    monDischarging = discharging;
+  }
+  if (discharging) cachedPct = mon.sample((int)pmu.getBattVoltage(), now);
+  else cachedPct = conn ? pmu.getBatteryPercent() : -1;
+  if (cachedPct < 0 && conn) cachedPct = pmu.getBatteryPercent();   // no voltage reading
 }
 
 int batPercent() { refreshPower(); return cachedPct; }
 bool batCharging() { refreshPower(); return cachedCharging; }
 bool usbPresent() { refreshPower(); return cachedUsb; }
+bool usbPresentNow() { return pmuOk ? pmu.isVbusIn() : true; }
+bool batShouldShutdown() { refreshPower(); return monDischarging && mon.shutdownNeeded(millis()); }
+void batPowerOff() {
+  if (pmuOk) pmu.shutdown();
+  mon.reset();   // still alive (USB plugged in that instant): the whole wait starts again
+}
 
 void pwrSetup() {
   if (!pmuOk) return;
