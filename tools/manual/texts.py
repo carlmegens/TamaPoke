@@ -143,6 +143,7 @@ EN = dict(
         ('My Pokémon is only a number, there is no picture.', 'The pictures live on the memory card (SD). A grown-up can put them back with the installer.'),
         ('My Pokémon is gone!', 'If it said goodbye, it is in your party (swipe right). A new egg is waiting for you.'),
         ('The time or the date is wrong.', 'Settings: set the time on page 1 and the date on page 2, then OK.'),
+        ('How do I trade a Pokémon?', 'Pair two TamaPoke in the gyms screen with **LAN**, then tap **TRADE**. Each one picks a Pokémon, and when **both** tap OK they swap. Some Pokémon evolve when they are traded!'),
         ('I can\'t explore any more.', 'The balls on the map are empty. Wait a bit: they come back by themselves, even faster while your Pokémon sleeps.')],
   grown='Pokémon caught while exploring are kept in a Pokédex box on the device itself, not on the SD card; the save backup (EXPORT on the serial console) includes them. The firmware, the installer and the full rules are on the project page. The Pokémon pictures and cries are optional packs copied to the microSD card by the web installer; without the cries, the TamaPoke plays its own little beeps instead. A new device starts at volume 3.',
 )
@@ -292,6 +293,7 @@ FR = dict(
         ('Mon Pokémon est juste un numéro, il n\'y a pas d\'image.', 'Les images sont sur la carte mémoire (SD). Un grand peut les remettre avec l\'installateur.'),
         ('Mon Pokémon est parti !', 'S\'il t\'a dit au revoir, il est dans ton équipe (glisse vers la droite). Un nouvel œuf t\'attend.'),
         ('L\'heure ou la date est fausse.', 'Réglages : l\'heure sur la page 1, la date sur la page 2, puis OK.'),
+        ('Comment échanger un Pokémon ?', 'Connecte deux TamaPoke dans l\'écran des arènes avec **LAN**, puis touche **ECHANGE**. Chacun choisit un Pokémon, et quand **les deux** touchent OK, ils s\'échangent. Certains Pokémon évoluent quand on les échange !'),
         ('Je ne peux plus explorer.', 'Les balls de la carte sont vides. Attends un peu : elles reviennent toutes seules, encore plus vite quand ton Pokémon dort.')],
   grown='Les Pokémon attrapés en explorant sont gardés dans une boîte du Pokédex sur l\'appareil lui-même, pas sur la carte SD ; la sauvegarde (EXPORT dans la console série) les inclut. Le firmware, l\'installateur et toutes les règles sont sur la page du projet. Les images et les cris des Pokémon sont des packs optionnels copiés sur la carte microSD par l\'installateur web ; sans les cris, le TamaPoke joue ses petits bips à la place. Un appareil neuf démarre au volume 3.',
 )

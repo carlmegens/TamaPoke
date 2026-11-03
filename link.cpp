@@ -26,7 +26,7 @@ uint16_t linkBuildTag() {
   const uint16_t bits[] = {
     (uint16_t)MOVE_COUNT, (uint16_t)DEX_COUNT, (uint16_t)MOVE_SLOTS,
     (uint16_t)TRAINER_TEAM_MAX, (uint16_t)sizeof(LinkMon),
-    (uint16_t)sizeof(LinkResult), (uint16_t)SI_COUNT,
+    (uint16_t)sizeof(LinkResult), (uint16_t)SI_COUNT, (uint16_t)sizeof(PartyMon),
   };
   for (uint16_t b : bits) { h ^= b; h *= 16777619u; }
   return (uint16_t)(h ^ (h >> 16));
@@ -143,7 +143,67 @@ void Link::begin(bool host, const char *myName) {
   sawRx = false;
   armed = false;
   peerName[0] = 0;
+  tMySeq = 0;
+  tradeReset();
+  tTheirDone = 0;
   (void)myName;
+}
+
+// ---- trading ----
+
+static void sendOffer(Link &l) {
+  uint8_t b[1 + sizeof(PartyMon)];
+  b[0] = l.tOffering ? l.tMySeq : 0;
+  memcpy(b + 1, &l.tMine, sizeof(PartyMon));
+  put(l, LM_TOFFER, b, l.tOffering ? (uint8_t)sizeof(b) : (uint8_t)1);
+}
+
+static void sendTradeAck(Link &l) {
+  uint8_t b[2] = { l.tTheirSeq, l.tMySeq };
+  put(l, l.tPhase ? LM_TDONE : LM_TACCEPT, b, 2);
+}
+
+// Both said OK to the same pair: store theirs now. Ours goes only when they
+// say they stored it (tPeerDone) -- see the header.
+static void tradeCommit(Link &l) {
+  if (l.tPhase || !l.tIAccepted || !l.tPeerAccepted) return;
+  l.tPhase = 1;
+  l.tArrived = true;
+  sendTradeAck(l);           // now a DONE: tells them ours is safe to give
+}
+
+void Link::tradeReset() {
+  if (tTheirSeq) tTheirDone = tTheirSeq;   // the peer may still be repeating it
+  tOffering = false;
+  tTheirSeq = 0;
+  tIAccepted = tPeerAccepted = tPeerDone = false;
+  tPhase = 0;
+  tArrived = false;
+  tMine = PartyMon();
+  tTheirs = PartyMon();
+}
+
+void Link::tradeOffer(const PartyMon &m) {
+  if (state != LINK_READY || tPhase) return;
+  tMine = m;
+  if (++tMySeq == 0) tMySeq = 1;   // 0 means "nothing"
+  tOffering = true;
+  tIAccepted = tPeerAccepted = false;
+  sendOffer(*this);
+}
+
+void Link::tradeWithdraw() {
+  if (tPhase) return;              // too late: theirs is already stored here
+  tOffering = false;
+  tIAccepted = tPeerAccepted = false;
+  sendOffer(*this);
+}
+
+void Link::tradeAccept() {
+  if (state != LINK_READY || tPhase || !tOffering || !tTheirSeq) return;
+  tIAccepted = true;
+  sendTradeAck(*this);
+  tradeCommit(*this);
 }
 
 void Link::addMon(const LinkMon &m) {
@@ -242,6 +302,17 @@ void Link::tick(uint32_t now) {
     sendSquad(*this, resendSeq);
   } else if (txLive) {
     rawSend(*this, tx, txN);
+  } else if (state == LINK_READY) {
+    // Nothing kept to repeat. While trading, the deal is repeated as a SET --
+    // an offer lost under an accept would leave the accept naming an offer the
+    // peer never saw. Otherwise a ping, so two players choosing slowly are not
+    // reported LOST after LINK_BATTLE_TIMEOUT_MS of silence.
+    if (tOffering || tTheirSeq || tPhase) {
+      sendOffer(*this);
+      if (tIAccepted) sendTradeAck(*this);
+    } else {
+      put(*this, LM_PING, nullptr, 0);
+    }
   }
 }
 
@@ -352,6 +423,38 @@ void Link::onPacket(const uint8_t *buf, uint8_t len) {
       if (!theirsN || !mineN) return;
       rearm();
       return;
+    case LM_PING:
+      return;                          // proof of life is all it carries
+    case LM_TOFFER: {
+      if (n < 1 || tPhase) return;     // a deal already struck is not reopened
+      uint8_t seq = body[0];
+      if (seq == tTheirSeq) return;    // a resend of what we have
+      // an offer from a deal already finished, still being repeated: their
+      // numbers only grow, so only one NEWER than that deal is a new offer
+      if (seq && tTheirDone && (uint8_t)(seq - tTheirDone) > 128) return;
+      if (seq && seq == tTheirDone) return;
+      tIAccepted = tPeerAccepted = false;   // a different offer voids both OKs
+      if (!seq) { tTheirSeq = 0; return; }
+      if (n < 1 + sizeof(PartyMon)) return;
+      PartyMon m;
+      memcpy(&m, body + 1, sizeof(PartyMon));
+      // untrusted: clamped before it can index a table or be stored
+      if (!tradeSanitize(m)) { tTheirSeq = 0; return; }
+      tTheirs = m;
+      tTheirSeq = seq;
+      return;
+    }
+    case LM_TACCEPT:
+    case LM_TDONE: {
+      if (n < 2) return;
+      // [their view of MY seq][their own seq]: both must be the current pair
+      bool match = tOffering && body[0] == tMySeq && tTheirSeq && body[1] == tTheirSeq;
+      if (!match) return;
+      tPeerAccepted = true;
+      if (type == LM_TDONE) tPeerDone = true;
+      tradeCommit(*this);
+      return;
+    }
     default:
       return;                          // unknown type: ignore, do not desync
   }

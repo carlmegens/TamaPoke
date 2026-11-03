@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://tubiana.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v3.28-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v3.29-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/tubiana/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/tubiana/TamaPoke/stargazers)
@@ -802,6 +802,25 @@ type they specialise in -- rock, pool, electric, greenhouse, fire, ghost, ice --
 and every Champion fights in the grand hall. The arenas are drawn from scratch
 by `tools/gen_scenes.py`; any picture dropped into `tools/backs/` under the same
 name replaces one, and `tools/gen_backs.py` fits it to 240x112.
+
+## Trading
+
+Two paired devices (gym ladder -> **LAN**, one HOST and one JOIN) can trade from
+the LAN screen's **TRADE** button: each player picks one creature from the party
+or the box -- never the one they are raising -- both see the two offers side by
+side, and the trade happens when **both** tap OK. Changing your offer cancels the
+other player's OK. A full party AND box cannot take anything in.
+
+**KADABRA, MACHOKE, GRAVELER, HAUNTER, BOLDORE, GURDURR, PHANTUMP and
+PUMPKABOO evolve on arrival**, as in the games; they still evolve at level 40
+too, so nobody needs a friend to finish a line. Both forms go in the Pokedex.
+
+**A trade never loses a creature.** A radio cannot guarantee both sides learn
+the outcome, so each side first STORES what it receives, and gives up its own
+only when the other side confirms it stored it. A link cut at the worst moment
+leaves a creature on both devices, never on neither. `trade_test` cuts the
+radio at every single frame of the exchange to hold that; the protocol is
+`LINK_PROTO 3`, so both devices need firmware 3.29.
 
 ## Battery
 

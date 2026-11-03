@@ -111,6 +111,11 @@ uint8_t catchChancePct(int16_t dex, uint16_t hp, uint16_t maxHp, bool kid);
 // stat formula as anything that hatches -- through a scratch Pet that was never
 // begin()'d and so cannot save. The birthday present and every wild creature
 // are made here, so the two cannot disagree about what a creature is.
+// Trading. What `dex` becomes on arriving by trade (Kadabra, Machoke, Graveler,
+// Haunter and their later-generation kin), or 0; and the clamp every creature
+// that arrives over the radio goes through before it is stored.
+int16_t tradeEvolution(int16_t dex);
+bool tradeSanitize(PartyMon &m);
 // How many species from lo to hi a player can ever own: every one with art.
 // The 19 in noart.h keep their dex numbers (they are positional in saves) but
 // can never hatch, be met or be evolved into, so a Pokedex counted out of all

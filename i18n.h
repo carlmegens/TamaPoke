@@ -189,6 +189,15 @@ enum StrId : uint8_t {
   S_EVOLVED_FMT,  // "%s became %s!"
   S_ADOPT,  // Pokedex page, while an egg waits: raise this one instead
   S_ADOPT_SURE,  // the second tap that confirms it
+  S_TRADE,  // the LAN screen's TRADE button and the trade screen title
+  S_TRADE_GIVE,  // trade: what you put on the table
+  S_TRADE_GET,  // trade: what the other trainer offers
+  S_TRADE_PICK,  // trade: choose who to offer
+  S_TRADE_WAIT,  // trade: you said OK, waiting on them
+  S_TRADE_THEYOK,  // trade: they said OK
+  S_TRADE_DONE_FMT,  // "%s is yours!"
+  S_TRADE_NONE,  // trade: nobody in the party or box
+  S_TRADE_CHANGE,  // trade: pick someone else
   STR_COUNT
 };
 

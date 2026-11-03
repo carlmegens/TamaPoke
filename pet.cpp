@@ -441,6 +441,14 @@ int16_t Pet::openGift() {
   return pick;
 }
 
+// Evolution is one-way: a target must be drawable and its pack installed, or
+// the creature would show as a dex number forever. One answer for both kinds
+// of evolution below.
+static int16_t evoTarget(int16_t to) {
+  if (to < 1 || to > DEX_COUNT || !speciesHasArt(to) || !regionAvailable(regionOfDex(to))) return 0;
+  return to;
+}
+
 int16_t evolutionAt(int16_t dex, uint16_t level) {
   if (dex < 1 || dex > DEX_COUNT) return 0;
   const DexEntry &e = DEX_TBL[dex];
@@ -450,9 +458,34 @@ int16_t evolutionAt(int16_t dex, uint16_t level) {
     uint8_t n = eeveeBranches(o);
     return n ? o[random(n)] : 0;
   }
-  int16_t to = (int16_t)e.evolvesTo;
-  if (to > DEX_COUNT || !speciesHasArt(to) || !regionAvailable(regionOfDex(to))) return 0;
-  return to;
+  return evoTarget((int16_t)e.evolvesTo);
+}
+
+// The species that evolve by being traded in the games, with no held item.
+// They also keep their level-40 route here, so nobody is stuck without a
+// friend to trade with.
+static const int16_t TRADE_EVOS[] = { 64, 67, 75, 93, 525, 533, 708, 710 };
+
+int16_t tradeEvolution(int16_t dex) {
+  for (int16_t d : TRADE_EVOS)
+    if (d == dex) return evoTarget((int16_t)DEX_TBL[dex].evolvesTo);
+  return 0;
+}
+
+// A creature that arrived over the radio: every field clamped to something
+// that can index a table or be drawn, whatever the bytes were.
+bool tradeSanitize(PartyMon &m) {
+  if (m.dex < 1 || m.dex > DEX_COUNT) return false;
+  if (m.level < 1) m.level = 1;
+  if (m.level > MAX_LEVEL) m.level = MAX_LEVEL;
+  uint8_t *iv[4] = { &m.ivAtk, &m.ivDef, &m.ivSpe, &m.ivHp };
+  for (uint8_t *p : iv) if (*p > 31) *p = 31;
+  uint8_t *tr[3] = { &m.trAtk, &m.trDef, &m.trSpe };
+  for (uint8_t *p : tr) if (*p > 100) *p = 100;
+  m.shiny = m.shiny ? 1 : 0;
+  m.nick[sizeof(m.nick) - 1] = 0;
+  for (int i = 0; i < MOVE_SLOTS; i++) if (m.moves[i] >= MOVE_COUNT) m.moves[i] = 0;
+  return true;
 }
 
 bool makeMon(int16_t dex, uint16_t lvl, bool shiny, PartyMon &m) {
