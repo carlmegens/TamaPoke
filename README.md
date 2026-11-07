@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://tubiana.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v3.29-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v3.30-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/tubiana/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/tubiana/TamaPoke/stargazers)
@@ -303,8 +303,10 @@ lava, by place).
   Dark. Never a legendary; only regions whose pack is installed and species that
   can be drawn. Weights: common 6, rare 1, evolved forms 2 (and only once your
   team is level 20+). **A species you have never seen counts 3x.**
-- **Levels** sit around your team's: the highest of the live creature and the
-  party, minus 2 to plus 2.
+- **Levels** sit around the creature that goes out first -- the one you are
+  raising, or with an egg waiting the first of your party -- minus 2 to plus 2,
+  never under 2. So a newborn meets newborns, and your banked team is there as
+  back-up rather than setting the level.
 - **10% take fright** and run (they still count as *seen*); 90% start a fight on
   the same scene. **1 in 100** is shiny.
 - **The BALL** sits beside FIGHT. It holds with a chance from the species'

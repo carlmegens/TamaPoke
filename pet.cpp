@@ -565,12 +565,17 @@ void Pet::expGain(uint32_t units) {
   expAcc = expN >= EXP_MAX ? 0 : (uint16_t)acc;
 }
 
+// Around the level of whoever goes out FIRST: the live creature, or with an
+// egg waiting the first of the party -- the same order buildSquad() sends
+// them in. It used to be the highest level of the whole team, so a newborn
+// at level 1 led into a wild creature at the level of the best one banked,
+// and was knocked out before the player could do anything.
 uint8_t Pet::wildLevel() const {
   int base = 0;
   if (!isEgg()) base = level();
-  for (int i = 0; i < PARTY_SLOTS; i++)
-    if (!party.slots[i].empty() && party.slots[i].level > base) base = party.slots[i].level;
-  if (base < 5) base = 5;
+  else
+    for (int i = 0; i < PARTY_SLOTS && !base; i++)
+      if (!party.slots[i].empty()) base = party.slots[i].level;
   int l = base - 2 + (int)random(5);
   return (uint8_t)(l < 2 ? 2 : (l > MAX_LEVEL ? MAX_LEVEL : l));
 }
