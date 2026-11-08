@@ -24,7 +24,7 @@
   esp-web-install-button[install-unsupported] { display:none; }
   .unsupported { display:none; color:var(--bad); font-weight:500; }
   .row { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; }
-  #log { font-family: ui-monospace, monospace; font-size:.85rem; background:#1b1b25; color:#d8dcf0;
+  #log, #saveLog { font-family: ui-monospace, monospace; font-size:.85rem; background:#1b1b25; color:#d8dcf0;
          border-radius:10px; padding:.75rem 1rem; margin-top:1rem; max-height:220px; overflow:auto; white-space:pre-wrap; display:none; }
   .bar { height:10px; background:var(--track); border-radius:5px; overflow:hidden; margin-top:.75rem; display:none; }
   .bar > div { height:100%; width:0; background:var(--ok); transition: width .15s; }
@@ -55,6 +55,27 @@
     <p class="note">Still nothing? Use a cable that carries <b>data</b> (a charge-only USB-C
        cable powers the board perfectly and carries nothing), and plug <b>straight into your
        computer</b> rather than through a hub.</p>
+  </div>
+
+  <h2><span class="num">0</span>Back up your save <span class="note">(optional, a board already running TamaPoke)</span></h2>
+  <div class="step">
+    <p>Keeps everything: the creature, the party and box, the Pokédex and its box of
+       catches, badges, stickers and the trainer's name. Download it before an update
+       you care about, or to move a game to another board; <b>Restore</b> puts a file
+       back and restarts the board.</p>
+    <div class="row">
+      <button id="saveConnect">🔌 Connect board</button>
+      <button id="saveDown" disabled>💾 Download my save</button>
+      <label><button id="saveUpBtn" disabled onclick="document.getElementById('saveUp').click()">📂 Restore a save…</button>
+        <input id="saveUp" type="file" accept=".txt" hidden></label>
+      <button id="saveDisc" disabled>Disconnect</button>
+    </div>
+    <p class="note">Only one program can use the board at a time: press <b>Disconnect</b>
+       before step 1. A restore REPLACES the game on the board — it is the same as
+       pasting an <code>EXPORT</code> block into the serial console, checked line by line
+       first, so a damaged file changes nothing.</p>
+    <div class="bar" id="saveBar"><div></div></div>
+    <pre id="saveLog"></pre>
   </div>
 
   <h2><span class="num">1</span>Flash the firmware</h2>
@@ -138,11 +159,14 @@
 
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
 <script>
-const log = (m) => { const el = document.getElementById('log'); el.style.display='block';
+const logTo = (id) => (m) => { const el = document.getElementById(id); el.style.display='block';
   el.textContent += m + '\n'; el.scrollTop = el.scrollHeight; };
+const log = logTo('log');
+const saveLog = logTo('saveLog');
 const supported = 'serial' in navigator;
 if (!supported) { document.getElementById('unsupported').style.display='block';
-  document.getElementById('connect').disabled = true; }
+  document.getElementById('connect').disabled = true;
+  document.getElementById('saveConnect').disabled = true; }
 
 let port, reader, writer, lineBuf = '';
 
@@ -211,19 +235,121 @@ async function sendAll(items) {
   log(`Done (${done - fail}/${items.length}). Restart the board (PWR button).`);
 }
 
-document.getElementById('connect').onclick = async () => {
+// One connection, shared by the save buttons and the sprite loader: the port
+// can only be open once, and whichever section connected, both are live.
+async function connectBoard(say) {
+  if (port) return true;
   try {
     port = await navigator.serial.requestPort();
     await port.open({ baudRate: 115200 });
     reader = port.readable.getReader();
     writer = port.writable.getWriter();
     lineBuf = '';
-    log('Connected. Press "Load sprites".');
-    for (const b of document.querySelectorAll('[data-region]')) b.disabled = false;
-    document.getElementById('files').disabled = false;
-    probeRegions();      // grey out any region that has no bundle to download
-    document.getElementById('connect').disabled = true;
-  } catch (e) { log('Could not connect: ' + e.message); }
+  } catch (e) { say('Could not connect: ' + e.message); port = null; return false; }
+  for (const b of document.querySelectorAll('[data-region]')) b.disabled = false;
+  document.getElementById('files').disabled = false;
+  for (const id of ['saveDown', 'saveUpBtn', 'saveDisc']) document.getElementById(id).disabled = false;
+  document.getElementById('connect').disabled = true;
+  document.getElementById('saveConnect').disabled = true;
+  probeRegions();      // grey out any region that has no bundle to download
+  return true;
+}
+
+async function disconnectBoard() {
+  try { reader && reader.releaseLock(); writer && writer.releaseLock(); await port.close(); } catch (e) {}
+  port = reader = writer = null;
+  for (const b of document.querySelectorAll('[data-region]')) b.disabled = true;
+  document.getElementById('files').disabled = true;
+  for (const id of ['saveDown', 'saveUpBtn', 'saveDisc']) document.getElementById(id).disabled = true;
+  document.getElementById('connect').disabled = false;
+  document.getElementById('saveConnect').disabled = false;
+}
+
+document.getElementById('connect').onclick = async () => {
+  if (await connectBoard(log)) log('Connected. Press "Load sprites".');
+};
+document.getElementById('saveConnect').onclick = async () => {
+  if (await connectBoard(saveLog)) saveLog('Connected.');
+};
+document.getElementById('saveDisc').onclick = async () => {
+  await disconnectBoard();
+  saveLog('Disconnected: the board is free for step 1.');
+};
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// The firmware's EXPORT prints the save as the very commands that restore it:
+// "# TamaPoke save ..." then IMPORT lines, IMPORTBOX lines for the Pokedex box,
+// and a bare IMPORT that commits. Everything else on the console (health
+// lines, logs) is left out of the file.
+document.getElementById('saveDown').onclick = async () => {
+  if (!writer) return;
+  lineBuf = '';
+  await writer.write(enc.encode('EXPORT\n'));
+  const lines = [];
+  let started = false;
+  const deadline = Date.now() + 90000;
+  while (Date.now() < deadline) {
+    const l = await readLine(10000);
+    if (l === null) break;
+    if (l === 'EXPORT FAIL') { saveLog('The board could not export its save.'); return; }
+    if (l.startsWith('# TamaPoke save')) { started = true; lines.push(l); continue; }
+    if (!started || !l.startsWith('IMPORT')) continue;
+    lines.push(l);
+    if (l === 'IMPORT') break;            // the commit line: the block is whole
+  }
+  if (lines[lines.length - 1] !== 'IMPORT') {
+    saveLog('No complete save came back. Is TamaPoke running on the board (not the installer)?');
+    return;
+  }
+  const d = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n') + '\n'], { type: 'text/plain' }));
+  a.download = `tamapoke-save-${d}.txt`;
+  a.click();
+  saveLog(`Save downloaded (${lines.length} lines): ${a.download}`);
+};
+
+// A restore is the same block pasted back. Lines are paced: the board reads
+// one console line per pass of its loop, and a pass that is drawing a frame
+// takes ~70 ms, so a fast burst would overflow its USB buffer and fail the
+// checksum (safely -- nothing is applied -- but for no reason).
+document.getElementById('saveUp').onchange = async (ev) => {
+  const f = ev.target.files[0];
+  ev.target.value = '';
+  if (!f || !writer) return;
+  const lines = (await f.text()).split(/\r?\n/).map(l => l.trim()).filter(l => l.startsWith('IMPORT'));
+  if (lines.length < 2 || lines[lines.length - 1] !== 'IMPORT' || !lines.some(l => l.startsWith('IMPORT '))) {
+    saveLog('That file is not a TamaPoke save.');
+    return;
+  }
+  if (!confirm('Replace the game on this board with the one in ' + f.name + '?')) return;
+  const bar = document.getElementById('saveBar'); bar.style.display = 'block';
+  const fill = bar.firstElementChild;
+  lineBuf = '';
+  for (let i = 0; i < lines.length - 1; i++) {
+    await writer.write(enc.encode(lines[i] + '\n'));
+    fill.style.width = ((i + 1) / lines.length * 100) + '%';
+    await sleep(150);
+  }
+  await writer.write(enc.encode('IMPORT\n'));
+  fill.style.width = '100%';
+  const deadline = Date.now() + 10000;
+  while (Date.now() < deadline) {
+    const l = await readLine(deadline - Date.now());
+    if (l === null) break;
+    if (l === 'IMPORT OK') {
+      saveLog('Restored. The board restarts with the saved game; reconnect if you need it again.');
+      await disconnectBoard();
+      return;
+    }
+    if (l === 'IMPORT REJECTED' || l === 'IMPORT EMPTY' || l.startsWith('IMPORTBOX BAD') ||
+        l === 'IMPORT ODD' || l === 'IMPORT BAD' || l === 'IMPORT FULL') {
+      saveLog('The board refused the file (' + l + '). Nothing was changed.');
+      return;
+    }
+  }
+  saveLog('No answer from the board. Check the game on it before trying again.');
 };
 
 // One bundle per region. Kanto alone is ~40 MB and all three would be ~100 MB,
