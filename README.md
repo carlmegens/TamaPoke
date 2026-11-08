@@ -44,56 +44,52 @@ and complete them all (shinies included).
 
 ## What this fork adds
 
-Everything here landed after the fork from Dylan's v3.11, up to v3.32. As in
-the rest of this README, the screenshots come from the real firmware, rendered
-by the emulator.
+New since Dylan's v3.11, up to v3.32 (the details are in
+[docs/fork-changes.md](docs/fork-changes.md)):
 
-### Explore the island and catch what lives there
+- 🗺️ [**Explore and catch**](#explore-and-catch): an island of eight places, wild creatures and a ball
+- ✨ [**Animated fights**](#animated-fights): every move drawn in its type, and a ball that wobbles
+- 📦 [**Pokédex box, adoption, experience, trading**](#pokédex-box-adoption-experience-trading)
+- 🧒 [**For kids**](#for-kids): kid mode, a daily quiz, birthday and calendar surprises, names in your language
+- 📖 [**A printable manual**](#a-printable-manual-for-kids) in English, French and German
+- 🔊 [**Cries**](#cries-build-them-yourself), which you build yourself for licence reasons
+- 🎨 [**Scenes drawn by code**](#scenes-drawn-by-code): homes for every time of day, and gym arenas
+- 💾 [**Save backup in the browser**](#save-backup-in-the-browser)
+
+All screenshots are rendered from the real firmware by the emulator.
+
+### Explore and catch
 
 | The map | A wild one | Caught! |
 |---|---|---|
 | <img src="docs/screens/fork/explore.png" width="240"> | <img src="docs/screens/fork/wild.png" width="240"> | <img src="docs/screens/fork/caught.png" width="240"> |
 
-- **EXPLORE** in the menu opens an island with eight places: forest, meadow,
-  beach, ocean, cave, mountain, snow and volcano. Each place has its own
-  creatures. Tap what moves in the scene and a wild one comes out.
-- **Wild fights end with a BALL.** The lower its HP, the better the
-  ball's chances. The wild creature's level follows whoever you send out
-  first, so a fresh starter is not up against your strongest banked creature.
-- Wild fights have a **RUN** button, and no swipe can throw you out of one by
-  accident.
+**EXPLORE** in the menu opens an island with eight places, each with its own
+creatures. Tap what moves, fight the creature that comes out, and throw a
+**BALL**.
 
-### Fights you can watch
+### Animated fights
 
 <img src="docs/screens/fork/fx.png" width="720">
 
-- **Each move is drawn in its type:** fireballs, a lightning bolt, leaves,
-  ice shards, rocks. A **critical hit** bursts into stars, and a
-  super-effective one shakes the target. Stat changes show as arrows.
-- **The ball has its own animation.** It is thrown, opens and swallows the
-  creature, then wobbles. It ends with a click or bursts open.
-- **A tap skips any animation**, so nobody is kept waiting.
+The battle system is [Dylan's](#battling). This fork draws every move in its
+type, bursts critical hits into stars and shakes the target on super-effective
+hits. A thrown ball opens, wobbles and clicks shut. A tap skips any animation.
 
-### The Pokédex box, adoption and experience
+### Pokédex box, adoption, experience, trading
 
-| A creature in the box | A banked creature's sheet |
+| The Pokédex box | A banked creature |
 |---|---|
 | <img src="docs/screens/fork/dexbox.png" width="240"> | <img src="docs/screens/fork/sheetxp.png" width="240"> |
 
-- **Every catch goes to the Pokédex box**, one per species. It is stored as a
-  file on the board's flash; 790 creatures would not fit in NVS. From the box
-  you can send a creature **TO TEAM**, or **ADOPT** it in place of the waiting
-  egg and raise it from level 1.
-- **Banked creatures gain experience** by fighting. They level up and evolve,
-  but never past the best level you raised yourself.
-- **Trading** between two boards over the LAN link. A dropped connection can
-  copy a creature but never lose one; `trade_test` cuts the radio at every
-  frame to check this.
-- **A finishable Pokédex.** It counts only species that have art: 790, not 809.
+- Every catch is kept in the Pokédex box. You can **ADOPT** one instead of
+  hatching the egg.
+- Banked creatures gain **experience**, level up and evolve.
+- Two boards can **trade** over the LAN link.
 
 ### For kids
 
-| The daily quiz | A birthday present | Stickers |
+| Daily quiz | Birthday present | Stickers |
 |---|---|---|
 | <img src="docs/screens/fork/quiz.png" width="240"> | <img src="docs/screens/fork/birthday.png" width="240"> | <img src="docs/screens/fork/stickers.png" width="240"> |
 
@@ -101,50 +97,70 @@ by the emulator.
 |---|---|---|
 | <img src="docs/screens/fork/kidmode.png" width="240"> | <img src="docs/screens/fork/date.png" width="240"> | <img src="docs/screens/fork/namefr.png" width="240"> |
 
-- **Kid mode:** the needs never drop below 20, the creature never runs away,
-  and the volume is capped. A **needs speed** setting slows the whole care
-  routine down.
-- **"Who's that Pokémon?"**: ten silhouettes a day, and you can tap one to hear
-  its cry.
-- **Calendar surprises** bring eggs for Halloween, Christmas and the seasons,
-  plus a **present on the player's birthday**. A sticker book counts all of
-  them.
-- **Cries:** creatures cry when they hatch, evolve, leave or fight, and
-  sometimes when petted. Each touch makes one sound.
-- **Species and move names in the UI language.** CHARMANDER is SALAMECHE in
-  French and GLUMANDA in German.
-- **Gentler touch.** Taps forgive a slow or shaky finger, the egg's region pill
-  has a guard band so a miss cannot hatch the egg, and holding PWR for **2 s**
-  (not 4) turns the board off.
-- **The egg waits for you.** It hatches only on your third tap, never on its
-  own.
-- **A printable manual**, built from real screen captures:
-  [English](manual/TamaPoke-manual-EN.pdf) ·
-  [Français](manual/TamaPoke-manuel-FR.pdf) ·
-  [Deutsch](manual/TamaPoke-Handbuch-DE.pdf).
+- **Kid mode:** the creature never runs away and its needs never drop below 20.
+- **"Who's that Pokémon?"**: a quiz of ten silhouettes a day.
+- **Surprises:** eggs on calendar events, a present on the player's birthday,
+  and a sticker book to collect them.
+- **Easier to use:** species and move names follow the UI language, taps are
+  forgiving, and holding PWR for 2 s turns the board off.
+
+### A printable manual for kids
+
+<a href="manual/TamaPoke-manual-EN.pdf"><img src="docs/screens/fork/manual.png" width="720"></a>
+
+**18 pages to print and give with the toy.** Every picture in it is a real
+screen captured from the firmware, so it matches what the child sees.
+
+**📖 [English](manual/TamaPoke-manual-EN.pdf) · [Français](manual/TamaPoke-manuel-FR.pdf) · [Deutsch](manual/TamaPoke-Handbuch-DE.pdf)**
+
+### Cries: build them yourself
+
+Creatures cry when they hatch, evolve, leave, fight or get petted, and each
+touch makes one sound.
+
+**The cry files are not in this repository, and the online installer cannot
+send them.** The sounds are © The Pokémon Company (see [CREDITS.md](CREDITS.md#cries)),
+so each user fetches them from [PokeAPI/cries](https://github.com/PokeAPI/cries)
+on their own computer. Without them the game works the same, with beeps instead.
+
+1. Get the code and the two Python packages:
+
+   ```bash
+   git clone https://github.com/tubiana/TamaPoke.git
+   cd TamaPoke
+   pip install soundfile numpy
+   ```
+
+2. Fetch and convert the cries, about 12 MB for every species. This writes
+   `web/cries.pak` and the loose files in `tools/sdcard/cries/`:
+
+   ```bash
+   python tools/pack_cries.py
+   ```
+
+3. Put them on the board, in either of two ways:
+   - **Over USB, with the installer run locally.** Run
+     `python -m http.server 8000` from the repository folder. In Chrome or Edge,
+     open `http://localhost:8000/web/`, press **Connect board**, then
+     **🔊 Cries**. The button is enabled because `web/cries.pak` is now there.
+   - **With a card reader.** Copy the `tools/sdcard/cries` folder to the root
+     of the microSD card, so the files end up at `/cries/c001.raw` and so on.
 
 ### Scenes drawn by code
 
-| Home, with the time of day | The ocean | A gym arena |
+| Home, by time of day | The ocean | A gym arena |
 |---|---|---|
 | <img src="docs/screens/fork/home.png" width="240"> | <img src="docs/screens/fork/ocean.png" width="240"> | <img src="docs/screens/fork/arena.png" width="240"> |
 
-The ocean, the volcano, the main-screen homes and the eight gym arenas are
-original art generated by `tools/gen_scenes.py` and `tools/gen_home.py`, so
-they carry none of the licence question the supplied backdrops do. Each home
-has four palettes (dawn, day, dusk and night) that follow the clock. A gym
-fight takes place in that leader's arena.
+These are drawn by `tools/gen_scenes.py` and `tools/gen_home.py`, so they are
+MIT like the code. Each home has four palettes (dawn, day, dusk and night) that
+follow the clock.
 
-### Keeping your save safe
+### Save backup in the browser
 
-- **The web installer can back up and restore the save** from the browser,
-  over the same USB cable, before and after flashing. An install never wipes
-  a save: `check_installer.py` verifies this on every build.
-- `EXPORT` / `IMPORT` now carry the Pokédex box as well.
-- Fixed: saves stopped after the first fight, catches were lost from the
-  Pokédex, and the audio task could reboot the board through the watchdog.
-- The battery work from upstream (**ViezeVingertjes**) is ported in; see
-  [Battery](#battery). It also removed a black blink on every touch.
+The [web installer](https://tubiana.github.io/TamaPoke/web/) can **download
+your save and restore it** over the USB cable. Installing never wipes a save,
+and `check_installer.py` verifies that on every build.
 
 ## Screens
 
@@ -180,6 +196,10 @@ region's answer, so it cannot be flipped to farm a legendary.
 |---|---|---|
 | <img src="docs/screens/btlmenu.png" width="240"> | <img src="docs/screens/pick.png" width="240"> | <img src="docs/screens/win.png" width="240"> |
 
+> The battle system is the work of [**Dylan Dao**](https://github.com/DylanPDao/TamaPoke): moves, types, gyms, the
+> Elite 4, the party, LAN battles and the Game Boy synth. This fork adds the
+> [animations](#animated-fights).
+
 Turn- and move-based, with the real type chart, ailments and STAB. Real Game Boy
 battle music plays throughout.
 
@@ -188,6 +208,8 @@ battle music plays throughout.
 | Pick a ladder | Johto's gyms | LAN battle |
 |---|---|---|
 | <img src="docs/screens/gympick.png" width="240"> | <img src="docs/screens/gymsj.png" width="240"> | <img src="docs/screens/lanready.png" width="240"> |
+
+> The regions, their ladders and the checked rosters are by [**Dylan Dao**](https://github.com/DylanPDao/TamaPoke).
 
 Kanto, Johto, Hoenn, Sinnoh and Unova each have eight leaders, an Elite 4 and a
 champion, on easy and hard. Four of the five are the games' own teams, checked
@@ -229,7 +251,7 @@ first run**, and a one-click **web installer**.
 Pending: wild encounters / battle (designed, not implemented), 3D case, soak
 test. See **Roadmap**.
 
-## Game manual (the actual numbers)
+## Game rules and numbers
 
 A quick reference to how the game really works (values straight from the code).
 

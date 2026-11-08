@@ -54,8 +54,8 @@ enum in `i18n.h`, then add the translation at the *same index* in all 6 rows of
 `STRINGS[LANG_COUNT][STR_COUNT]` in `i18n.cpp`. The table is positional — a missing
 entry in one language shifts every string after it in that language.
 
-**Balance changes must update the README.** `README.md` § "Game manual (the actual
-numbers)" documents exact drain rates, spawn odds and thresholds straight from the
+**Balance changes must update the README.** `README.md` § "Game rules and
+numbers" documents exact drain rates, spawn odds and thresholds straight from the
 code. It is the project's spec, not decoration — changing a constant in `pet.h`/
 `pet.cpp` without updating that table makes the docs lie. Bump `FW_VERSION` in
 `TamaPoke.ino:27` and the firmware badge at the top of the README in the same commit.
@@ -795,10 +795,12 @@ forever. A real radio is asynchronous and might have hidden this until two
 devices with a fast link met. State is now set before sending, and that ordering
 matters anywhere `put()` can re-enter.
 
-**D. Licensing, before this repo goes public.** `CREDITS.md` records that the
-twelve battle backgrounds in `tools/backs/` have **no established provenance**.
-Everything else is accounted for (PMD sprites CC BY-NC, badges CC BY 3.0). Either
-confirm their licence or replace them.
+**D. Licensing.** The twelve supplied battle backgrounds in `tools/backs/` are
+AI-generated (confirmed by the owner, recorded in `CREDITS.md`). What remains
+unlicensed is Nintendo's own material that is compiled into the published
+firmware: the trainer avatars (`avatars.h`) and the battle music (`music.h`).
+Both are documented choices in `CREDITS.md`, each with a script that could
+replace the committed file. The cries are NOT committed, and must not be.
 
 
 0. ~~Fight UI polish~~ **done**. HP plates carry the `HP` label and your own
