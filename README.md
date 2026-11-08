@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://tubiana.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v3.31-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v3.32-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/tubiana/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/tubiana/TamaPoke/stargazers)
@@ -313,7 +313,14 @@ lava, by place).
   rarity and the HP left, linear between full health and the last sliver:
   common 40% -> 92%, evolved 25% -> 80%, rare 12% -> 60%; **kid mode +15**;
   always 1..95%. A miss costs your turn and the foe acts. A wild creature
-  knocked out is gone.
+  knocked out is gone. The throw is animated: the ball arcs over, opens in a
+  flash that draws the creature in, drops and **wobbles** (3 times when it
+  holds, 0-2 when it does not), then clicks shut with stars or bursts open.
+  The outcome is rolled as the ball leaves; **a tap skips** straight to it.
+- **Moves are animated too**: each type has its own effect travelling to the
+  target (fireball, droplets, a bolt, spinning leaves, ice shards, falling
+  rocks, gusts, an orb), then an impact; stars on a critical hit, a rattle on a
+  super-effective one, and arrows when a stat rises or falls.
 - **The Pokedex keeps them.** A catch is registered and stored in the
   **Pokedex box**: one creature per species, on the board's own flash (not the
   SD card). Catching a species again asks **which one to keep**. On a species'

@@ -35,14 +35,14 @@ bool startWildBattle(int16_t dex, uint8_t lvl, uint8_t place);
 void battleTap(int16_t x, int16_t y);
 extern bool exploreOpen, expKeepAsk, battleOpen, btlCaught;
 extern int8_t expPlace; extern uint8_t expActive, btlMsgCount, partyDetail;
-extern uint32_t expActiveUntil, expNextAt, btlBallUntil;
+extern uint32_t expActiveUntil, expNextAt, btlBallUntil, btlCatchEnd;
 extern Combatant btlFoe;
 extern PartyMon expCatch;
 // a place's scene with spot 2 frozen mid-stir, so the picture shows what to tap
 static void scene(int8_t pl){ openExplore(); expPlace = pl; expNextAt = millis() + 600000; expActive = 2; expActiveUntil = millis() + 600000; }
 // a wild CATERPIE in the forest, its opening line already read
 static void wild(){ scene(2); startWildBattle(10, 12, 2); while (btlMsgCount) battleTap(233, 233); }
-static void caught(){ wild(); for (int k = 0; k < 40 && !btlCaught; k++) { if (btlMsgCount) { battleTap(233,233); continue; } btlFoe.hp = 1; btlMenu = 0; battleTap(317, 296); } btlBallUntil = 0; }
+static void caught(){ wild(); for (int k = 0; k < 40 && !btlCaught; k++) { if (btlCatchEnd) { battleTap(233,233); continue; } if (btlMsgCount) { battleTap(233,233); continue; } btlFoe.hp = 1; btlMenu = 0; battleTap(317, 296); } if (btlCatchEnd) battleTap(233, 233); btlBallUntil = 0; }   // a tap skips the catch to its click
 
 static void dump(const char*n){ FILE*f=fopen(n,"wb"); fprintf(f,"P6 466 466 255\n");
   const uint16_t*b=gfx->buffer(); for(int i=0;i<466*466;i++){uint16_t p=b[i];
