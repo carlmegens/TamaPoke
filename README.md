@@ -25,10 +25,10 @@ and complete them all (shinies included).
 >   and Elite 4 for every region, the party and the box, LAN battles between two
 >   devices, the save backup, the Game Boy synth, and the Pokédex's growth from
 >   151 to 809 species.
-> - **This fork** (Thibault Tubiana) adds species and move names in the UI
->   language, the creatures' cries, a kid mode, the daily quiz, calendar events,
->   a birthday present and stickers, the date page, a printable manual for kids
->   (EN/FR), and gym arenas drawn by code.
+> - **This fork** (Thibault Tubiana) made it something a seven-year-old can play:
+>   exploring and catching, animated fights, a kid mode, the creatures' cries,
+>   names in your own language, and a printed manual. The full list, with
+>   screenshots, is in **[What this fork adds](#what-this-fork-adds)** just below.
 >
 > If you like this, go **star [the original](https://github.com/socquique/TamaPoke)
 > and [Dylan's fork](https://github.com/DylanPDao/TamaPoke)**.
@@ -41,6 +41,110 @@ and complete them all (shinies included).
 > CC BY-NC-SA. See **[License](#license)** and **Credits**.
 
 🔴 **3D-printed Pokéball case + print profiles → [on MakerWorld](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)** · flash it in your browser → **[web installer](https://tubiana.github.io/TamaPoke/web/)**
+
+## What this fork adds
+
+Everything here landed after the fork from Dylan's v3.11, up to v3.32. As in
+the rest of this README, the screenshots come from the real firmware, rendered
+by the emulator.
+
+### Explore the island and catch what lives there
+
+| The map | A wild one | Caught! |
+|---|---|---|
+| <img src="docs/screens/fork/explore.png" width="240"> | <img src="docs/screens/fork/wild.png" width="240"> | <img src="docs/screens/fork/caught.png" width="240"> |
+
+- **EXPLORE** in the menu opens an island with eight places: forest, meadow,
+  beach, ocean, cave, mountain, snow and volcano. Each place has its own
+  creatures. Tap what moves in the scene and a wild one comes out.
+- **Wild fights end with a BALL.** The lower its HP, the better the
+  ball's chances. The wild creature's level follows whoever you send out
+  first, so a fresh starter is not up against your strongest banked creature.
+- Wild fights have a **RUN** button, and no swipe can throw you out of one by
+  accident.
+
+### Fights you can watch
+
+<img src="docs/screens/fork/fx.png" width="720">
+
+- **Each move is drawn in its type:** fireballs, a lightning bolt, leaves,
+  ice shards, rocks. A **critical hit** bursts into stars, and a
+  super-effective one shakes the target. Stat changes show as arrows.
+- **The ball has its own animation.** It is thrown, opens and swallows the
+  creature, then wobbles. It ends with a click or bursts open.
+- **A tap skips any animation**, so nobody is kept waiting.
+
+### The Pokédex box, adoption and experience
+
+| A creature in the box | A banked creature's sheet |
+|---|---|
+| <img src="docs/screens/fork/dexbox.png" width="240"> | <img src="docs/screens/fork/sheetxp.png" width="240"> |
+
+- **Every catch goes to the Pokédex box**, one per species. It is stored as a
+  file on the board's flash; 790 creatures would not fit in NVS. From the box
+  you can send a creature **TO TEAM**, or **ADOPT** it in place of the waiting
+  egg and raise it from level 1.
+- **Banked creatures gain experience** by fighting. They level up and evolve,
+  but never past the best level you raised yourself.
+- **Trading** between two boards over the LAN link. A dropped connection can
+  copy a creature but never lose one; `trade_test` cuts the radio at every
+  frame to check this.
+- **A finishable Pokédex.** It counts only species that have art: 790, not 809.
+
+### For kids
+
+| The daily quiz | A birthday present | Stickers |
+|---|---|---|
+| <img src="docs/screens/fork/quiz.png" width="240"> | <img src="docs/screens/fork/birthday.png" width="240"> | <img src="docs/screens/fork/stickers.png" width="240"> |
+
+| Kid mode | Setting the date | Names in your language |
+|---|---|---|
+| <img src="docs/screens/fork/kidmode.png" width="240"> | <img src="docs/screens/fork/date.png" width="240"> | <img src="docs/screens/fork/namefr.png" width="240"> |
+
+- **Kid mode:** the needs never drop below 20, the creature never runs away,
+  and the volume is capped. A **needs speed** setting slows the whole care
+  routine down.
+- **"Who's that Pokémon?"**: ten silhouettes a day, and you can tap one to hear
+  its cry.
+- **Calendar surprises** bring eggs for Halloween, Christmas and the seasons,
+  plus a **present on the player's birthday**. A sticker book counts all of
+  them.
+- **Cries:** creatures cry when they hatch, evolve, leave or fight, and
+  sometimes when petted. Each touch makes one sound.
+- **Species and move names in the UI language.** CHARMANDER is SALAMECHE in
+  French and GLUMANDA in German.
+- **Gentler touch.** Taps forgive a slow or shaky finger, the egg's region pill
+  has a guard band so a miss cannot hatch the egg, and holding PWR for **2 s**
+  (not 4) turns the board off.
+- **The egg waits for you.** It hatches only on your third tap, never on its
+  own.
+- **A printable manual**, built from real screen captures:
+  [English](manual/TamaPoke-manual-EN.pdf) ·
+  [Français](manual/TamaPoke-manuel-FR.pdf) ·
+  [Deutsch](manual/TamaPoke-Handbuch-DE.pdf).
+
+### Scenes drawn by code
+
+| Home, with the time of day | The ocean | A gym arena |
+|---|---|---|
+| <img src="docs/screens/fork/home.png" width="240"> | <img src="docs/screens/fork/ocean.png" width="240"> | <img src="docs/screens/fork/arena.png" width="240"> |
+
+The ocean, the volcano, the main-screen homes and the eight gym arenas are
+original art generated by `tools/gen_scenes.py` and `tools/gen_home.py`, so
+they carry none of the licence question the supplied backdrops do. Each home
+has four palettes (dawn, day, dusk and night) that follow the clock. A gym
+fight takes place in that leader's arena.
+
+### Keeping your save safe
+
+- **The web installer can back up and restore the save** from the browser,
+  over the same USB cable, before and after flashing. An install never wipes
+  a save: `check_installer.py` verifies this on every build.
+- `EXPORT` / `IMPORT` now carry the Pokédex box as well.
+- Fixed: saves stopped after the first fight, catches were lost from the
+  Pokédex, and the audio task could reboot the board through the watchdog.
+- The battery work from upstream (**ViezeVingertjes**) is ported in; see
+  [Battery](#battery). It also removed a black blink on every touch.
 
 ## Screens
 
