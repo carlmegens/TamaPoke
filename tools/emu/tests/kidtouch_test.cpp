@@ -31,10 +31,15 @@ static void pump(int n) { for (int i = 0; i < n; i++) { std::this_thread::sleep_
 static void gesture(int x0, int y0, int x1, int y1, int ms) {
   lastInteract = millis();                  // awake: a dimmed panel swallows the first touch
   g_touchX = x0; g_touchY = y0; g_touchDown = true; emuFireInterrupt(); pump(2);
-  int steps = ms / 30; if (steps < 1) steps = 1;
-  for (int i = 1; i <= steps; i++) {
-    g_touchX = x0 + (x1 - x0) * i / steps; g_touchY = y0 + (y1 - y0) * i / steps;
-    std::this_thread::sleep_for(std::chrono::milliseconds(30)); loop();
+  // Timed on the clock, not by counting steps: each loop() takes its own time
+  // on top of the sleep, and a busy machine made a "2 s" press last over 2.5 s.
+  uint32_t t0 = millis();
+  for (;;) {
+    uint32_t e = millis() - t0;
+    if (e > (uint32_t)ms) e = ms;
+    g_touchX = x0 + (x1 - x0) * (int)e / ms; g_touchY = y0 + (y1 - y0) * (int)e / ms;
+    if (e >= (uint32_t)ms) break;
+    std::this_thread::sleep_for(std::chrono::milliseconds(20)); loop();
   }
   g_touchDown = false; emuFireInterrupt(); pump(3);
 }

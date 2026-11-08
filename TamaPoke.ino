@@ -44,7 +44,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "3.31"
+#define FW_VERSION "3.32"
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
   LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
@@ -564,6 +564,318 @@ uint8_t btlMenu = 0;
 #define BTL_HIT_MS 420
 char btlMsg[6][40];
 uint8_t btlMsgCount = 0;   // queued lines; a tap shows the next
+
+// ---------- battle effects ----------
+// Purely visual. A turn is resolved the moment it is chosen; these only SHOW
+// what was decided -- a projectile in the move's type, an impact, stars on a
+// critical hit, arrows for a stat change, and the catch: the ball thrown, the
+// creature drawn in, the ball wobbling, then a click or a burst. Nothing here
+// changes the fight, and a tap during the catch skips straight to its end, so
+// an impatient child is never stuck watching.
+#define FX_TRAVEL_MS 340
+#define FX_IMPACT_MS 280
+#define FX_SLOTS 4
+enum : uint8_t { FX_HIT = 1, FX_CRIT = 2, FX_SUPER = 4, FX_STATUS = 8 };
+struct BtlFx { uint32_t t0 = 0; uint8_t from = 0, type = 0, flags = 0; int8_t stage = 0; };
+BtlFx btlFx[FX_SLOTS];
+uint32_t btlShakeUntil = 0;     // a super-effective hit rattles its target
+uint8_t btlShakeWho = 1;
+// where each side's creature is, roughly its middle (see btlSide's anchors)
+static const int16_t FX_X[2] = { 100, 324 }, FX_Y[2] = { 206, 78 };
+
+// The catch: thrown, drawn in, dropped, wobbled 1-3 times, then a click (it
+// holds) or a burst (it escapes). The outcome was rolled when the ball left.
+#define CATCH_THROW_MS 450
+#define CATCH_OPEN_MS 250
+#define CATCH_DROP_MS 200
+#define CATCH_SHAKE_MS 600
+#define CATCH_END_MS 450
+#define CATCH_BALL_X 324
+#define CATCH_BALL_Y 100
+uint32_t btlCatchT0 = 0, btlCatchEnd = 0;   // btlCatchEnd 0 = no catch animating
+uint8_t btlCatchShakes = 0;
+bool btlCatchOk = false;
+
+static void btlFxClear() {
+  for (auto &f : btlFx) f.t0 = 0;
+  btlShakeUntil = 0;
+  btlCatchEnd = 0;
+}
+
+// One move's effect, from side `from` toward the other, starting at `t0`.
+static void btlFxMove(uint8_t from, const TurnLog &lg, uint32_t t0) {
+  if (lg.skipped || lg.hurtSelf || lg.charged || !lg.move || lg.move >= MOVE_COUNT) return;
+  BtlFx *slot = &btlFx[0];
+  uint32_t now = millis();
+  for (auto &f : btlFx)
+    if (!f.t0 || now > f.t0 + FX_TRAVEL_MS + FX_IMPACT_MS) { slot = &f; break; }
+  slot->t0 = t0;
+  slot->from = from;
+  slot->type = MOVE_TBL[lg.move].type;
+  slot->stage = lg.stageDelta;
+  bool landed = lg.damage && !lg.missed && !lg.immune;
+  // a miss still flies, then puffs out; a move with no damage is a status show
+  slot->flags = landed ? FX_HIT : (lg.missed || lg.immune) ? 0 : FX_STATUS;
+  if (landed && lg.crit) slot->flags |= FX_CRIT;
+  if (landed && lg.effPct > 100) {
+    slot->flags |= FX_SUPER;
+    btlShakeUntil = t0 + FX_TRAVEL_MS + 320;
+    btlShakeWho = 1 - from;
+  }
+}
+
+static void btlCatchStart(bool ok, uint8_t shakes) {
+  btlCatchOk = ok;
+  btlCatchShakes = ok ? 3 : shakes;
+  btlCatchT0 = millis();
+  btlCatchEnd = btlCatchT0 + CATCH_THROW_MS + CATCH_OPEN_MS + CATCH_DROP_MS +
+                btlCatchShakes * CATCH_SHAKE_MS + CATCH_END_MS;
+}
+
+// The click (or the burst) has happened: only now does a catch sound like one.
+// Skipped early, the foe's answer (timed for after the ball) is pulled forward
+// by the time saved, so it plays now rather than over the narration later.
+static void btlCatchFinish() {
+  if (!btlCatchEnd) return;
+  uint32_t now = millis();
+  if (now < btlCatchEnd) {
+    uint32_t early = btlCatchEnd - now;
+    for (auto &f : btlFx) if (f.t0 > now) f.t0 -= early;
+    for (int i = 0; i < 2; i++) {
+      if (btlLungeUntil[i] > now) btlLungeUntil[i] -= early;
+      if (btlHitUntil[i] > now) btlHitUntil[i] -= early;
+    }
+    if (btlShakeUntil > now) btlShakeUntil -= early;
+  }
+  btlCatchEnd = 0;
+  if (btlCatchOk) {
+    btlBallUntil = millis() + 1500;
+    audioMusic(MUS_VICTORY);
+    sfxPlay(SFX_VICTORY);
+  }
+}
+
+// While it animates the creature is inside the ball: from the flash that
+// draws it in until the end, unless it is bursting back out.
+static bool btlCatchHidesFoe(uint32_t now) {
+  if (!btlCatchEnd || now >= btlCatchEnd) return false;
+  uint32_t e = now - btlCatchT0;
+  if (e < CATCH_THROW_MS + CATCH_OPEN_MS / 2) return false;
+  if (!btlCatchOk && now + CATCH_END_MS / 2 >= btlCatchEnd) return false;   // out again
+  return true;
+}
+
+// two tones per type: the effect's body and its highlight
+static const uint16_t FX_COL[18][2] = {
+  { 0xFFFF, 0xC618 }, { 0xFC60, 0xFFE0 }, { 0x3D9F, 0xAEFF }, { 0xFFE0, 0xFFFF },
+  { 0x4E89, 0xA7E8 }, { 0xAFFF, 0xFFFF }, { 0xFA60, 0xFFFF }, { 0xA11F, 0xD35F },
+  { 0xC4C8, 0x8A85 }, { 0xDEFF, 0xFFFF }, { 0xFB1F, 0xFDDF }, { 0x9E64, 0xCF2A },
+  { 0xAAA6, 0x7A04 }, { 0x7A1F, 0x3809 }, { 0x681F, 0xFC60 }, { 0x4208, 0x8410 },
+  { 0xBDF7, 0xFFFF }, { 0xFDBA, 0xFFFF },
+};
+
+static void fxStar(int x, int y, int r, uint16_t c) {
+  gfx->fillRect(x - r, y - 1, 2 * r + 1, 3, c);
+  gfx->fillRect(x - 1, y - r, 3, 2 * r + 1, c);
+  gfx->fillRect(x - r / 2, y - r / 2, r + 1, r + 1, c);
+}
+
+static void fxLeaf(int x, int y, float a, uint16_t c) {
+  int dx = (int)(12 * cosf(a)), dy = (int)(12 * sinf(a));
+  int px = (int)(5 * -sinf(a)), py = (int)(5 * cosf(a));
+  gfx->fillTriangle(x - dx, y - dy, x + dx, y + dy, x + px, y + py, c);
+  gfx->fillTriangle(x - dx, y - dy, x + dx, y + dy, x - px, y - py, c);
+}
+
+// Arrows rising off a creature whose stat went up, or sinking through one
+// whose stat went down.
+static void fxStageArrows(int side, bool up, float q) {
+  uint16_t c = up ? 0xFFE0 : 0x3D9F;     // yellow rising, blue sinking: both read on any creature
+  for (int i = 0; i < 3; i++) {
+    int x = FX_X[side] - 34 + i * 34;
+    int y = FX_Y[side] + (up ? 34 - (int)(q * 80) : -44 + (int)(q * 80)) + (i % 2) * 14;
+    for (int o = 1; o >= 0; o--) {          // a white outline, then the arrow
+      uint16_t k = o ? UI_WHITE : c;
+      if (up) gfx->fillTriangle(x, y - 14 - o * 2, x - 11 - o * 2, y + o, x + 11 + o * 2, y + o, k);
+      else gfx->fillTriangle(x, y + 14 + o * 2, x - 11 - o * 2, y - o, x + 11 + o * 2, y - o, k);
+      gfx->fillRect(x - 4 - o, up ? y : y - 13, 9 + o * 2, 13 + o, k);
+    }
+  }
+}
+
+// By slot, not by reference: arduino-cli hoists a prototype of every function
+// to the top of the sketch, above BtlFx, and a BtlFx in the signature fails there.
+static void btlDrawMoveFx(uint8_t slot, uint32_t now) {
+  const BtlFx &f = btlFx[slot];
+  if (!f.t0 || now < f.t0) return;
+  uint32_t e = now - f.t0;
+  if (e >= FX_TRAVEL_MS + FX_IMPACT_MS) return;
+  int to = 1 - f.from;
+  int x0 = FX_X[f.from], y0 = FX_Y[f.from], x1 = FX_X[to], y1 = FX_Y[to];
+  uint8_t t = f.type < 18 ? f.type : 0;
+  uint16_t c1 = FX_COL[t][0], c2 = FX_COL[t][1];
+
+  if (f.flags & FX_STATUS) {                // no damage: a stat change, or a sparkle
+    float q = (float)e / (FX_TRAVEL_MS + FX_IMPACT_MS);
+    if (f.stage > 0) fxStageArrows(f.from, true, q);
+    else if (f.stage < 0) fxStageArrows(to, false, q);
+    else
+      for (int i = 0; i < 6; i++) {
+        float a = q * 6.28f + i * 1.047f;
+        fxStar(x1 + (int)(34 * cosf(a)), y1 + (int)(26 * sinf(a)), 3, c1);
+      }
+    return;
+  }
+
+  if (e < FX_TRAVEL_MS) {                   // on its way
+    float p = (float)e / FX_TRAVEL_MS;
+    float arc = (t == T_WATER || t == T_GRASS || t == T_BUG) ? 40.0f : 14.0f;
+    int x = x0 + (int)((x1 - x0) * p), y = y0 + (int)((y1 - y0) * p) - (int)(arc * sinf(p * 3.1416f));
+    switch (t) {
+      case T_ELECTRIC: {                    // a bolt, re-struck every 40 ms
+        int px = x0, py = y0;
+        for (int s = 1; s <= 6; s++) {
+          int nx = x0 + (x - x0) * s / 6, ny = y0 + (y - y0) * s / 6;
+          if (s < 6) { nx += (int)((((e / 40) * 7 + s * 13) % 21) - 10); ny += (int)((((e / 40) * 5 + s * 11) % 21) - 10); }
+          gfx->drawLine(px, py, nx, ny, c1);
+          gfx->drawLine(px + 1, py, nx + 1, ny, c2);
+          gfx->drawLine(px, py + 1, nx, ny + 1, c1);
+          px = nx; py = ny;
+        }
+        break;
+      }
+      case T_FIRE: case T_DRAGON:           // a fireball with a trail
+        for (int k = 3; k >= 1; k--) {
+          float pk = p - k * 0.07f;
+          if (pk < 0) continue;
+          gfx->fillCircle(x0 + (int)((x1 - x0) * pk), y0 + (int)((y1 - y0) * pk) - (int)(arc * sinf(pk * 3.1416f)), 13 - k * 3, c2);
+        }
+        gfx->fillCircle(x, y, 16, c1);
+        gfx->fillCircle(x - 3, y - 3, 7, c2);
+        break;
+      case T_WATER:                         // a stream of droplets
+        for (int k = 0; k < 4; k++) {
+          float pk = p - k * 0.08f;
+          if (pk < 0) continue;
+          int dx = x0 + (int)((x1 - x0) * pk), dy = y0 + (int)((y1 - y0) * pk) - (int)(arc * sinf(pk * 3.1416f));
+          gfx->fillCircle(dx, dy, 10 - k * 2, c1);
+          gfx->fillCircle(dx - 2, dy - 3, 3, c2);
+        }
+        break;
+      case T_GRASS: case T_BUG:             // spinning leaves
+        for (int k = 0; k < 3; k++)
+          fxLeaf(x + (int)(18 * cosf(e * 0.02f + k * 2.1f)), y + (int)(18 * sinf(e * 0.02f + k * 2.1f)),
+                 e * 0.03f + k, k ? c1 : c2);
+        break;
+      case T_ICE:                           // shards
+        for (int k = 0; k < 3; k++) {
+          int sx = x + (k - 1) * 18, sy = y + (k % 2) * 10;
+          gfx->fillTriangle(sx, sy - 15, sx - 6, sy + 7, sx + 6, sy + 7, k == 1 ? c2 : c1);
+        }
+        break;
+      case T_ROCK: case T_GROUND: {         // rocks drop onto the target
+        int fall = (int)(p * 110);
+        for (int k = 0; k < 3; k++)
+          gfx->fillCircle(x1 - 30 + k * 30, y1 - 110 + fall - k * 10, 10 + (k % 2) * 3, k == 1 ? c2 : c1);
+        break;
+      }
+      case T_FLYING:                        // gusts
+        for (int k = 0; k < 3; k++) {
+          int gy = y + (k - 1) * 14;
+          gfx->fillRect(x - 24 + k * 6, gy, 36, 3, c1);
+          gfx->drawFastHLine(x - 18 + k * 6, gy + 3, 24, c2);
+        }
+        break;
+      case T_NORMAL: case T_FIGHTING: case T_STEEL:
+        break;                              // the lunge IS the attack
+      default:                              // psychic, ghost, dark, poison, fairy: an orb
+        gfx->fillCircle(x, y, 12, c1);
+        gfx->drawCircle(x, y, 17 + (int)(e / 30) % 5, c2);
+        gfx->drawCircle(x, y, 18 + (int)(e / 30) % 5, c2);
+        break;
+    }
+    return;
+  }
+
+  float q = (float)(e - FX_TRAVEL_MS) / FX_IMPACT_MS;   // the impact
+  if (!(f.flags & FX_HIT)) {                // missed: a puff of nothing
+    gfx->drawCircle(x1, y1, 6 + (int)(q * 14), 0x8410);
+    return;
+  }
+  int r = 16 + (int)(q * 42);
+  for (int i = 0; i < 8; i++) {
+    float a = i * 0.785f;
+    int ax = x1 + (int)(r * 0.5f * cosf(a)), ay = y1 + (int)(r * 0.5f * sinf(a));
+    int bx = x1 + (int)(r * cosf(a)), by = y1 + (int)(r * sinf(a));
+    gfx->drawLine(ax, ay, bx, by, c1);
+    gfx->drawLine(ax + 1, ay, bx + 1, by, c1);
+    gfx->drawLine(ax, ay + 1, bx, by + 1, c1);
+  }
+  gfx->drawCircle(x1, y1, (int)(q * 34), c2);
+  gfx->drawCircle(x1, y1, (int)(q * 34) + 1, c2);
+  if (t == T_POISON || t == T_GHOST)        // bubbles rising off the target
+    for (int k = 0; k < 4; k++) gfx->drawCircle(x1 - 20 + k * 14, y1 - (int)(q * 40) - k * 6, 4, c1);
+  if (f.flags & FX_CRIT)
+    for (int i = 0; i < 5; i++) {
+      float a = i * 1.2566f + q * 2;
+      fxStar(x1 + (int)((24 + q * 36) * cosf(a)), y1 + (int)((24 + q * 36) * sinf(a)), 7, 0xFFE0);
+    }
+}
+
+static void btlDrawCatch(uint32_t now) {
+  if (!btlCatchEnd) return;
+  uint32_t e = now - btlCatchT0;
+  int bx = CATCH_BALL_X, by = CATCH_BALL_Y;
+  if (e < CATCH_THROW_MS) {                 // thrown in an arc from your side
+    float p = (float)e / CATCH_THROW_MS;
+    int x = 110 + (int)((CATCH_BALL_X - 110) * p);
+    int y = 300 + (int)((70 - 300) * p) - (int)(70 * sinf(p * 3.1416f));
+    drawBallIcon(x, y, 10 + (int)(4 * p));
+    return;
+  }
+  e -= CATCH_THROW_MS;
+  if (e < CATCH_OPEN_MS) {                  // it opens: a flash draws the creature in
+    float q = (float)e / CATCH_OPEN_MS;
+    int r = 10 + (int)(q * 46);
+    gfx->drawCircle(bx, 70, r, UI_WHITE);
+    gfx->drawCircle(bx, 70, r - 2, 0xFFE0);
+    for (int i = 0; i < 6; i++) {
+      float a = i * 1.047f + q;
+      gfx->drawLine(bx, 70, bx + (int)(r * cosf(a)), 70 + (int)(r * sinf(a)), UI_WHITE);
+    }
+    drawBallIcon(bx, 70, 14);
+    return;
+  }
+  e -= CATCH_OPEN_MS;
+  if (e < CATCH_DROP_MS) {                  // and drops to the ground
+    drawBallIcon(bx, 70 + (int)((by - 70) * e / CATCH_DROP_MS), 14);
+    return;
+  }
+  e -= CATCH_DROP_MS;
+  if (e < (uint32_t)btlCatchShakes * CATCH_SHAKE_MS) {   // the wobbles
+    uint32_t s = e % CATCH_SHAKE_MS;
+    int off = s < 300 ? (int)(8 * sinf(s * 3.1416f / 150)) : 0;
+    drawBallIcon(bx + off, by + (off ? 1 : 0), 14);
+    return;
+  }
+  float q = (float)(now + CATCH_END_MS - btlCatchEnd) / CATCH_END_MS;
+  if (q > 1) q = 1;
+  if (btlCatchOk) {                         // click: it holds
+    drawBallIcon(bx, by, 14);
+    for (int i = 0; i < 4; i++) {
+      float a = i * 1.5708f + q * 1.5f;
+      fxStar(bx + (int)((18 + q * 20) * cosf(a)), by - 10 + (int)((10 + q * 14) * sinf(a)), 4, UI_BAR_WARN);
+    }
+  } else {                                  // burst: it got out
+    gfx->fillCircle(bx, by - 20, 8 + (int)(q * 36), UI_WHITE);
+  }
+}
+
+static void btlDrawFx(uint32_t now) {
+  for (uint8_t i = 0; i < FX_SLOTS; i++) btlDrawMoveFx(i, now);
+  btlDrawCatch(now);
+}
+
 #define BTL_CELL_W 160
 #define BTL_CELL_H 44
 #define BTL_GRID_X 69
@@ -4540,6 +4852,7 @@ bool startWildBattle(int16_t dex, uint8_t lvl, uint8_t place) {
 
 // What every one-off fight starts with once both sides are set.
 static void btlBegin() {
+  btlFxClear();
   btlMsgCount = 0;
   btlOver = false;
   btlWon = false;
@@ -4704,10 +5017,12 @@ static void btlResolve(uint8_t yourMove) {
   uint16_t hp0You = btlYou.hp, hp0Foe = btlFoe.hp;
   battleAct(*a, *b, ma, lg);
   btlNarrate(*a, *b, lg);
+  btlFxMove(a == &btlYou ? 0 : 1, lg, now);
   if (lg.damage && !lg.hurtSelf) btlLungeUntil[a == &btlYou ? 0 : 1] = now + BTL_LUNGE_MS;
   if (!b->fainted()) {
     battleAct(*b, *a, mb, lg);
     btlNarrate(*b, *a, lg);
+    btlFxMove(b == &btlYou ? 0 : 1, lg, now + FX_TRAVEL_MS + FX_IMPACT_MS);
     if (lg.damage && !lg.hurtSelf)
       btlLungeUntil[b == &btlYou ? 0 : 1] = now + BTL_LUNGE_MS + BTL_LUNGE_MS;
   }
@@ -4824,7 +5139,8 @@ static void btlSide(int tx, int ty, int sx, int sy, const Combatant &c, uint8_t 
   }
   // Caught: the ball sits where the creature stood, rocking for a moment.
   uint32_t now = millis();
-  if (who == 1 && btlCaught) {
+  if (who == 1 && btlCatchHidesFoe(now)) return;     // inside the ball
+  if (who == 1 && btlCaught && !btlCatchEnd) {
     int rock = now < btlBallUntil ? (((btlBallUntil - now) / 120) % 2 ? 4 : -4) : 0;
     drawBallIcon(sx + 24 + rock, sy + 60, 16);
     return;
@@ -4853,6 +5169,10 @@ static void btlSide(int tx, int ty, int sx, int sy, const Combatant &c, uint8_t 
     uint32_t left = btlHitUntil[who] - now;
     ox += ((left / 50) % 2) ? 5 : -5;      // jitter
   }
+  if (now < btlShakeUntil && who == btlShakeWho && now + 320 >= btlShakeUntil) {
+    oy += ((now / 40) % 2) ? 6 : -6;       // super effective: it rattles
+    ox += ((now / 30) % 2) ? 4 : -4;
+  }
 
   // Real PMD playback when the sprite streamed: attack while lunging, hurt
   // while flinching, idle otherwise. `has()` guards every one, because not
@@ -4879,6 +5199,7 @@ static void btlSide(int tx, int ty, int sx, int sy, const Combatant &c, uint8_t 
 // Bars drain rather than snap: a hit that removes half your health should be
 // visible as it happens, not as a value that was already different.
 static void btlEaseBars() {
+  if (btlCatchEnd) return;          // nothing has happened yet, as far as anyone can see
   const uint16_t real[2] = { btlYou.hp, btlFoe.hp };
   for (int i = 0; i < 2; i++) {
     int diff = (int)real[i] - (int)btlHpShown[i];
@@ -4975,6 +5296,7 @@ void renderWin() {
 
 void renderBattle() {
   if (btlWinUntil) { renderWin(); return; }
+  if (btlCatchEnd && millis() >= btlCatchEnd) btlCatchFinish();
   btlEaseBars();
   gfx->fillRect(0, 0, 466, 30, RGB565_BLACK);   // not fillScreen: see renderExploreMap()
   drawBattleBack();
@@ -4986,6 +5308,8 @@ void renderBattle() {
   // name like BLASTOISE was losing its first characters off the edge
   btlSide(82, 82, 300, 40, btlFoe, 1);    // foe reads top-left, sprite top-right
   btlSide(250, 190, 76, 168, btlYou, 0);  // you read bottom-right, sprite bottom-left
+  btlDrawFx(millis());
+  if (btlCatchEnd) { gfx->flush(); return; }   // the ball has the stage: no menu, no words yet
 
   // Waiting on the other device. Without this the screen is identical to the
   // one where it is your turn, so a tap that has been sent and a tap that was
@@ -5212,21 +5536,24 @@ static void btlThrowBall() {
     btlWon = true;
     btlFought |= (uint8_t)(1u << btlSquadAt);
     btlAwardXp();                      // a catch is worth what a knockout is
-    btlBallUntil = now + 1500;
-    audioMusic(MUS_VICTORY);
-    sfxPlay(SFX_VICTORY);
+    btlCatchStart(true, 3);            // music and the rocking ball wait for the click
+    sfxPlay(SFX_TAP);
     btlSay(T(S_CATCH_OK_FMT), dexName(btlFoe.dex));
     return;
   }
-  sfxPlay(SFX_DENY);
+  // It gets out: after 0-2 wobbles, then the foe answers -- its attack shown
+  // once it is out of the ball, not while it is still inside.
+  btlCatchStart(false, (uint8_t)random(3));
+  sfxPlay(SFX_TAP);
   btlSay("%s", T(S_CATCH_FAIL));
   TurnLog lg;
   uint16_t hp0 = btlYou.hp;
   uint8_t fm = aiChooseMove(btlFoe, btlYou, false);
   battleAct(btlFoe, btlYou, fm, lg);
   btlNarrate(btlFoe, btlYou, lg);
-  if (lg.damage && !lg.hurtSelf) btlLungeUntil[1] = now + BTL_LUNGE_MS;
-  if (btlYou.hp < hp0) btlHitUntil[0] = now + BTL_HIT_MS;
+  btlFxMove(1, lg, btlCatchEnd);
+  if (lg.damage && !lg.hurtSelf) btlLungeUntil[1] = btlCatchEnd + BTL_LUNGE_MS;
+  if (btlYou.hp < hp0) btlHitUntil[0] = btlCatchEnd + FX_TRAVEL_MS + BTL_HIT_MS;
   btlAfterTurn();
 }
 
@@ -5240,6 +5567,7 @@ static void btlRun() {
 }
 
 void battleTap(int16_t x, int16_t y) {
+  if (btlCatchEnd) { btlCatchFinish(); return; }   // skip the catch to its end
   if (btlWinUntil) {          // dismiss the win screen and leave the fight
     btlWinUntil = 0;
     btlFreeSprites();
