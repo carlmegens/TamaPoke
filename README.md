@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://tubiana.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v3.30-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v3.31-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/tubiana/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/tubiana/TamaPoke/stargazers)
@@ -589,7 +589,7 @@ If one bottoms out it counts as a *slip-up*.
 - **SETTINGS** = **set the clock** (time, then date) and pick the **language** + sound on/off.
 - Long press (3 s) on the creature = **release** dialog.
 
-**Physical PWR button:** short = screen on/off · long (4 s) = full power-off
+**Physical PWR button:** short = screen on/off · held **2 s** = full power-off, the game saved first (the firmware does it; the PMU's own 4 s cut stays as a backstop)
 (the RTC stays alive, so time passes even while it's off).
 
 ## Decisions: you choose, and you watch

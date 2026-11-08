@@ -94,10 +94,14 @@ int main(){
 
   // the fanfare ends by itself, and leaving stops whatever is playing
   printf("      music after the catch: %u\n", g_emuMusic);
-  swipe(380, 233, 80, 233);                    // back to the map
-  ck(exploreOpen && expPlace < 0, "a swipe on a place goes back to the map");
-  swipe(380, 233, 80, 233);                    // and off it
-  ck(!exploreOpen, "a swipe on the map leaves exploring");
+  // A swipe no longer leaves (a child's drag at a spot was one): BACK and the
+  // map's arrow are the ways out.
+  swipe(380, 233, 80, 233);
+  ck(exploreOpen && expPlace == PL_FOREST, "a swipe on a place stays there");
+  click(233, 395);                             // BACK, under the scene
+  ck(exploreOpen && expPlace < 0, "BACK on a place goes back to the map");
+  click(233 - 120, 46);                        // the map's back arrow
+  ck(!exploreOpen, "the arrow on the map leaves exploring");
   ck(g_emuMusic == 0, "no music is left playing once exploring is closed");
 
   // None of these screens may clear to black before drawing: on the board the

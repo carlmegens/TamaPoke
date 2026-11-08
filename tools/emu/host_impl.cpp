@@ -132,7 +132,7 @@ void batSetPollMs(uint32_t) {}
 bool batShouldShutdown() { return false; }
 void batPowerOff() {}
 void pwrSetup() {}
-bool pwrShortPressed() { return false; }
+uint8_t pwrPoll() { return PWR_NONE; }
 
 // --- audio (silent) ---
 void audioBegin() {}

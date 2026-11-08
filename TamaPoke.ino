@@ -44,7 +44,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "3.30"
+#define FW_VERSION "3.31"
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
   LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
@@ -1305,14 +1305,23 @@ void loop() {
     }
   }
 
-  // pulsacion corta del PWR: pantalla on/off
+  // The PWR button: a short press toggles the screen; held 2 s it switches the
+  // TamaPoke off, the game saved first. The PMU's own cut needs 4 s at least
+  // (4/6/8/10 is all the AXP2101 offers), which is long for a child, so the
+  // firmware does it at 2 s and the PMU's 4 s stays as the backstop.
   static uint32_t lastPwr = 0;
   if (now - lastPwr > 250) {
     lastPwr = now;
-    if (pwrShortPressed()) {
+    uint8_t pwr = pwrPoll();
+    if (pwr == PWR_SHORT) {
       screenOff = !screenOff;
       pet.setScreenOff(screenOff);   // asleep only if it is also night
       if (!screenOff) wakeUI();
+    } else if (pwr == PWR_LONG) {
+      Serial.println("PWR held: saving and powering off");
+      pet.saveNow();
+      panel->setBrightness(0);
+      batPowerOff();
     }
   }
 
@@ -1815,6 +1824,9 @@ bool inPetZone(int16_t x, int16_t y) {
 }
 
 // el toque se resuelve al LEVANTAR el dedo para distinguir tap de deslizar
+#define TAP_SLOP 60       // px a finger may drift and still tap (a swipe is > 80)
+#define TAP_MAX_MS 2500   // ms a tap may last (the hold on the pet is 3000)
+
 void handleTouch() {
   static uint32_t lastPoll = 0;
   if (millis() - lastPoll < 20) return;  // 50 Hz le sobra a un dedo
@@ -1874,7 +1886,11 @@ void handleTouch() {
     if (!holdFired && !swallowGesture) {
       if (abs(dx) > 80 && abs(dy) < 70 && dt < 800) onSwipe(dx > 0 ? 1 : -1);
       else if (abs(dy) > 80 && abs(dx) < 70 && dt < 800) onSwipeV(dy > 0 ? 1 : -1);
-      else if (dt < 1500 && abs(dx) < 40 && abs(dy) < 40) onTap(tX0, tY0);
+      // A tap forgives a finger that wobbles or lingers: small hands slide
+      // while pressing, and 40 px / 1.5 s lost a child's taps to nothing at all
+      // (too far for a tap, too short for an 80 px swipe). Still under the 3 s
+      // hold, and still well clear of a swipe.
+      else if (dt < TAP_MAX_MS && abs(dx) < TAP_SLOP && abs(dy) < TAP_SLOP) onTap(tX0, tY0);
     }
   }
   wasPressed = pressed;
@@ -1891,11 +1907,7 @@ void onSwipeV(int dir) {
     return;                 // on the chooser, vertical does nothing: pick a row
   if (menuOpen) { menuOpen = false; return; }   // any swipe closes the menu
   if (battleOpen) return;   // no swiping out of a fight
-  if (exploreOpen) {        // a scene goes back to the map; the map leaves
-    if (expKeepAsk) return;
-    if (expPlace >= 0) expPlace = -1; else closeExplore();
-    return;
-  }
+  if (exploreOpen) return;  // nor out of exploring: see onSwipe()
   if (pickOpen) { pickOpen = false; return; }
   if (lanOpen && tradeOpen) { tradeClose(); return; }   // back to the LAN screen, still paired
   if (lanOpen) { lanLeave(); lanOpen = false; return; }
@@ -2266,11 +2278,10 @@ void onSwipe(int dir) {
   if (quizOpen) { quizOpen = false; return; }   // any swipe leaves the quiz
   if (menuOpen) { menuOpen = false; return; }   // any swipe closes the menu
   if (battleOpen) return;   // no swiping out of a fight
-  if (exploreOpen) {        // a scene goes back to the map; the map leaves
-    if (expKeepAsk) return;
-    if (expPlace >= 0) expPlace = -1; else closeExplore();
-    return;
-  }
+  // Nor out of exploring. A child reaching for a stirring spot drags as much as
+  // taps, and the drag read as a swipe and dropped them back on the map -- or
+  // off it. The BACK button and the map's arrow are the ways out.
+  if (exploreOpen) return;
   if (lanOpen && tradeOpen) { tradeSwipe(dir); return; }   // pages who can be offered
   if (pickOpen) {   // horizontal pages the candidates, as everywhere else
     uint8_t pages = (pickCandidates() + PICK_PER_PAGE - 1) / PICK_PER_PAGE;
