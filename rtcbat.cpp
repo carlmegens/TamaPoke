@@ -108,16 +108,20 @@ void batPowerOff() {
 
 void pwrSetup() {
   if (!pmuOk) return;
-  pmu.setPowerKeyPressOffTime(XPOWERS_POWEROFF_4S);
+  pmu.setPowerKeyPressOffTime(XPOWERS_POWEROFF_4S);   // the hardware backstop: its shortest
+  pmu.setIrqLevelTime(XPOWERS_AXP2101_IRQ_TIME_2S);    // what counts as a long press
   pmu.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
-  pmu.enableIRQ(XPOWERS_AXP2101_PKEY_SHORT_IRQ);
+  pmu.enableIRQ(XPOWERS_AXP2101_PKEY_SHORT_IRQ | XPOWERS_AXP2101_PKEY_LONG_IRQ);
   pmu.clearIrqStatus();
 }
 
-bool pwrShortPressed() {
-  if (!pmuOk) return false;
+// One read of the PMU's latched status, both kinds answered from it, then
+// cleared -- reading it twice could clear one kind while asking about the other.
+uint8_t pwrPoll() {
+  if (!pmuOk) return PWR_NONE;
   pmu.getIrqStatus();
-  bool hit = pmu.isPekeyShortPressIrq();
-  if (hit) pmu.clearIrqStatus();
-  return hit;
+  bool shortHit = pmu.isPekeyShortPressIrq();
+  bool longHit = pmu.isPekeyLongPressIrq();
+  if (shortHit || longHit) pmu.clearIrqStatus();
+  return longHit ? PWR_LONG : (shortHit ? PWR_SHORT : PWR_NONE);
 }

@@ -20,4 +20,5 @@ void batPowerOff();              // the PMU cuts the power; the RTC keeps the ti
 // boton PWR del AXP2101: pulsacion larga 4s = apagado fisico (RTC sigue vivo);
 // la pulsacion corta la captura el firmware (pantalla on/off)
 void pwrSetup();
-bool pwrShortPressed();  // sondear en el loop
+enum : uint8_t { PWR_NONE = 0, PWR_SHORT, PWR_LONG };
+uint8_t pwrPoll();       // poll in the loop: a short press, a 2 s hold, or nothing
