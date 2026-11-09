@@ -51,7 +51,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "AJUSTAR FECHA", "DIA", "MES", "ANO", "Hoy: %u/%u",
     "EXPLORAR", "PRADERA", "PLAYA", "BOSQUE", "VOLCAN", "MONTANA", "NIEVE", "OCEANO", "CUEVA",
     "Toca lo que se mueve!", "Descansa para explorar", "+1 en %uh%02u", "Se escapo %s!", "Un %s salvaje!", "Aqui no hay nadie", "Primero abre el huevo!", "BALL", "Atrapado! %s", "Oh no! Se ha escapado!", "Se debilito... usa una BALL!",
-    "Cual %s te quedas?", "VIEJO Nv.%u", "NUEVO Nv.%u", "En la Pokedex: Nv.%u", "AL EQUIPO", "GUARDAR AQUI", "%s esta en la Pokedex", "%s +%u EXP", "%s sube a Nv.%u!", "%s es ahora %s!", "ADOPTAR", "SEGURO?", "INTERCAMBIO", "DAS", "RECIBES", "A quien intercambias?", "Esperando al otro entrenador", "El otro dijo OK!", "%s es tuyo!", "Ningun Pokemon que intercambiar", "CAMBIAR", },
+    "Cual %s te quedas?", "VIEJO Nv.%u", "NUEVO Nv.%u", "En la Pokedex: Nv.%u", "AL EQUIPO", "GUARDAR AQUI", "%s esta en la Pokedex", "%s +%u EXP", "%s sube a Nv.%u!", "%s es ahora %s!", "ADOPTAR", "SEGURO?", "INTERCAMBIO", "DAS", "RECIBES", "A quien intercambias?", "Esperando al otro entrenador", "El otro dijo OK!", "%s es tuyo!", "Ningun Pokemon que intercambiar", "CAMBIAR", "CAMBIO", "EQUIPO", "AJUSTES", "DESPEDIDA", },
   // ---------------- EN ----------------
   {
     "Evolving!", "Yum yum!", "It likes it!", "It's hungry!", "Needs a bath!",
@@ -97,7 +97,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "SET DATE", "DAY", "MONTH", "YEAR", "Today: %u/%u",
     "EXPLORE", "MEADOW", "BEACH", "FOREST", "VOLCANO", "MOUNTAIN", "SNOW", "OCEAN", "CAVE",
     "Tap what moves!", "Rest to explore again", "+1 in %uh%02u", "%s ran away!", "A wild %s appeared!", "Nobody lives here", "Hatch your egg first!", "BALL", "Gotcha! %s", "Oh no! It broke free!", "It fainted... try a BALL!",
-    "Keep which %s?", "OLD Lv.%u", "NEW Lv.%u", "In the Pokedex: Lv.%u", "TO TEAM", "STORE HERE", "%s is in the Pokedex", "%s +%u XP", "%s grew to Lv.%u!", "%s became %s!", "ADOPT", "SURE?", "TRADE", "YOU GIVE", "YOU GET", "Who will you trade?", "Waiting for the other trainer", "The other trainer said OK!", "%s is yours!", "No Pokemon to trade", "CHANGE", },
+    "Keep which %s?", "OLD Lv.%u", "NEW Lv.%u", "In the Pokedex: Lv.%u", "TO TEAM", "STORE HERE", "%s is in the Pokedex", "%s +%u XP", "%s grew to Lv.%u!", "%s became %s!", "ADOPT", "SURE?", "TRADE", "YOU GIVE", "YOU GET", "Who will you trade?", "Waiting for the other trainer", "The other trainer said OK!", "%s is yours!", "No Pokemon to trade", "CHANGE", "TRADE", "TEAM", "SETTINGS", "FAREWELL", },
   // ---------------- FR ----------------
   {
     "Il evolue!", "Miam miam!", "Il aime ca!", "Il a faim!", "Besoin d'un bain!",
@@ -142,7 +142,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "REGLER LA DATE", "JOUR", "MOIS", "ANNEE", "Score: %u/%u",
     "EXPLORER", "PRAIRIE", "PLAGE", "FORET", "VOLCAN", "MONTAGNE", "NEIGE", "OCEAN", "GROTTE",
     "Touche ce qui bouge!", "Repose-toi pour explorer", "+1 dans %uh%02u", "%s s est enfui!", "Un %s sauvage!", "Personne ici", "Fais d abord eclore l oeuf!", "BALL", "Attrape! %s", "Oh non! Il s est libere!", "K.O... essaie une BALL!",
-    "Quel %s garder?", "ANCIEN Niv.%u", "NOUVEAU Niv.%u", "Dans le Pokedex: Niv.%u", "DANS L EQUIPE", "RANGER ICI", "%s est dans le Pokedex", "%s +%u XP", "%s passe Niv.%u!", "%s devient %s!", "ADOPTER", "SUR ?", "ECHANGE", "TU DONNES", "TU RECOIS", "Qui veux-tu echanger ?", "On attend l'autre dresseur", "L'autre a dit OK !", "%s est a toi !", "Aucun Pokemon a echanger", "CHANGER", },
+    "Quel %s garder?", "ANCIEN Niv.%u", "NOUVEAU Niv.%u", "Dans le Pokedex: Niv.%u", "DANS L EQUIPE", "RANGER ICI", "%s est dans le Pokedex", "%s +%u XP", "%s passe Niv.%u!", "%s devient %s!", "ADOPTER", "SUR ?", "ECHANGE", "TU DONNES", "TU RECOIS", "Qui veux-tu echanger ?", "On attend l'autre dresseur", "L'autre a dit OK !", "%s est a toi !", "Aucun Pokemon a echanger", "CHANGER", "ECHANGER", "EQUIPE", "REGLAGES", "AU REVOIR", },
   // ---------------- DE ----------------
   {
     "Entwickelt sich!", "Mampf mampf!", "Gefaellt ihm!", "Hat Hunger!", "Braucht ein Bad!",
@@ -187,7 +187,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "DATUM STELLEN", "TAG", "MONAT", "JAHR", "Heute: %u/%u",
     "ERKUNDEN", "WIESE", "STRAND", "WALD", "VULKAN", "BERG", "SCHNEE", "MEER", "HOEHLE",
     "Tippe was sich bewegt!", "Ausruhen zum Erkunden", "+1 in %uh%02u", "%s ist geflohen!", "Ein wildes %s!", "Hier ist niemand", "Erst das Ei ausbrueten!", "BALL", "Gefangen! %s", "Oh nein! Es ist frei!", "Besiegt... nimm einen BALL!",
-    "Welches %s behalten?", "ALT Lv.%u", "NEU Lv.%u", "Im Pokedex: Lv.%u", "INS TEAM", "HIER ABLEGEN", "%s ist im Pokedex", "%s +%u EP", "%s ist jetzt Lv.%u!", "%s wird zu %s!", "ADOPTIEREN", "SICHER?", "TAUSCH", "DU GIBST", "DU BEKOMMST", "Wen tauschst du?", "Warte auf den anderen Trainer", "Der andere sagt OK!", "%s gehoert dir!", "Kein Pokemon zum Tauschen", "ANDERN", },
+    "Welches %s behalten?", "ALT Lv.%u", "NEU Lv.%u", "Im Pokedex: Lv.%u", "INS TEAM", "HIER ABLEGEN", "%s ist im Pokedex", "%s +%u EP", "%s ist jetzt Lv.%u!", "%s wird zu %s!", "ADOPTIEREN", "SICHER?", "TAUSCH", "DU GIBST", "DU BEKOMMST", "Wen tauschst du?", "Warte auf den anderen Trainer", "Der andere sagt OK!", "%s gehoert dir!", "Kein Pokemon zum Tauschen", "ANDERN", "TAUSCHEN", "TEAM", "OPTIONEN", "ABSCHIED", },
   // ---------------- IT ----------------
   {
     "Si evolve!", "Gnam gnam!", "Gli piace!", "Ha fame!", "Vuole un bagno!",
@@ -232,7 +232,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "IMPOSTA DATA", "GIORNO", "MESE", "ANNO", "Oggi: %u/%u",
     "ESPLORA", "PRATO", "SPIAGGIA", "BOSCO", "VULCANO", "MONTAGNA", "NEVE", "OCEANO", "GROTTA",
     "Tocca cio che si muove!", "Riposa per esplorare", "+1 tra %uh%02u", "%s e fuggito!", "Un %s selvatico!", "Qui non c e nessuno", "Prima fai schiudere l uovo!", "BALL", "Preso! %s", "Oh no! Si e liberato!", "Esausto... prova una BALL!",
-    "Quale %s tenere?", "VECCHIO Lv.%u", "NUOVO Lv.%u", "Nel Pokedex: Lv.%u", "IN SQUADRA", "METTI QUI", "%s e nel Pokedex", "%s +%u PE", "%s sale a Lv.%u!", "%s diventa %s!", "ADOTTA", "SICURO?", "SCAMBIO", "DAI", "RICEVI", "Chi vuoi scambiare?", "Aspetto l'altro allenatore", "L'altro ha detto OK!", "%s e tuo!", "Nessun Pokemon da scambiare", "CAMBIA", },
+    "Quale %s tenere?", "VECCHIO Lv.%u", "NUOVO Lv.%u", "Nel Pokedex: Lv.%u", "IN SQUADRA", "METTI QUI", "%s e nel Pokedex", "%s +%u PE", "%s sale a Lv.%u!", "%s diventa %s!", "ADOTTA", "SICURO?", "SCAMBIO", "DAI", "RICEVI", "Chi vuoi scambiare?", "Aspetto l'altro allenatore", "L'altro ha detto OK!", "%s e tuo!", "Nessun Pokemon da scambiare", "CAMBIA", "SCAMBIA", "SQUADRA", "OPZIONI", "ADDIO", },
   // ---------------- PT ----------------
   {
     "Evoluindo!", "Nham nham!", "Ele gosta!", "Esta com fome!", "Precisa de banho!",
@@ -277,7 +277,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "AJUSTAR DATA", "DIA", "MES", "ANO", "Hoje: %u/%u",
     "EXPLORAR", "PRADO", "PRAIA", "FLORESTA", "VULCAO", "MONTANHA", "NEVE", "OCEANO", "CAVERNA",
     "Toca no que se mexe!", "Descansa para explorar", "+1 em %uh%02u", "%s fugiu!", "Um %s selvagem!", "Ninguem aqui", "Primeiro choca o ovo!", "BALL", "Apanhado! %s", "Oh nao! Escapou!", "Desmaiou... usa uma BALL!",
-    "Qual %s ficar?", "VELHO Nv.%u", "NOVO Nv.%u", "Na Pokedex: Nv.%u", "PARA A EQUIPA", "GUARDAR AQUI", "%s esta na Pokedex", "%s +%u XP", "%s sobe a Nv.%u!", "%s virou %s!", "ADOTAR", "CERTEZA?", "TROCA", "DAS", "RECEBES", "Quem vais trocar?", "A espera do outro treinador", "O outro disse OK!", "%s e teu!", "Nenhum Pokemon para trocar", "MUDAR", },
+    "Qual %s ficar?", "VELHO Nv.%u", "NOVO Nv.%u", "Na Pokedex: Nv.%u", "PARA A EQUIPA", "GUARDAR AQUI", "%s esta na Pokedex", "%s +%u XP", "%s sobe a Nv.%u!", "%s virou %s!", "ADOTAR", "CERTEZA?", "TROCA", "DAS", "RECEBES", "Quem vais trocar?", "A espera do outro treinador", "O outro disse OK!", "%s e teu!", "Nenhum Pokemon para trocar", "MUDAR", "TROCAR", "EQUIPA", "AJUSTES", "DESPEDIDA", },
 };
 
 // Nombres de medalla en sus tres longitudes [idioma][medalla].

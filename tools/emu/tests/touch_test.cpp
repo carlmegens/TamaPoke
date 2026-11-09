@@ -168,16 +168,17 @@ int main(int argc, char **argv) {
   trainOpen = false;
 
   click(233, 60);
-  click(233, 75 + 16 + 46 + 4 + 22);     // menu row 1 == EXPLORE
-  if (!exploreOpen) { printf("FAIL: EXPLORE row did not open the map\n"); return 1; }
-  printf("PASS: menu EXPLORE row opens the map\n");
+  click(305, 143);                       // page 1, top-right tile == EXPLORE
+  if (!exploreOpen) { printf("FAIL: EXPLORE tile did not open the map\n"); return 1; }
+  printf("PASS: menu EXPLORE tile opens the map\n");
   exploreOpen = false;
 
   click(233, 60);                        // name/status band opens the menu
   if (!menuOpen) { printf("FAIL: name band did not open the menu\n"); return 1; }
-  click(233, 75 + 16 + 22);              // menu row 0 == STATS == MENU_ROW_Y(0)+22
+  click(300, 324);                       // the right-hand page dot: page 2
+  click(305, 143);                       // page 2, top-right tile == STATS
   if (!cardOpen || cardPage != 1) {
-    printf("FAIL: STATS row -> cardOpen=%d cardPage=%d (want 1,1)\n",
+    printf("FAIL: STATS tile ->cardOpen=%d cardPage=%d (want 1,1)\n",
            (int)cardOpen, (int)cardPage);
     return 1;
   }

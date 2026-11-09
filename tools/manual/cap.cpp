@@ -21,6 +21,7 @@ void openClock(); void openQuiz();
 void emuSetSpriteDir(const char *);
 void startTrainerBattle(uint8_t idx, bool hard);
 extern Arduino_Canvas *gfx; extern Pet pet;
+extern uint8_t menuPage;
 extern bool cardOpen, galleryOpen, clockOpen, kbOpen, menuOpen, partyOpen, trainOpen, gymOpen, gymPick, galleryPick, playerOpen, quizOpen, galleryDirty;
 extern uint8_t cardPage, settingsPage, playerPage, btlMenu, galleryRegion;
 extern int galleryPage;
@@ -72,7 +73,8 @@ int main(int argc, char **argv){
 
   if (!strcmp(sc,"feed")) onTap(134, 393);
   else if (!strcmp(sc,"sleep")) { pet.toggleLight(); settle(3); }
-  else if (!strcmp(sc,"menu")) menuOpen = true;
+  else if (!strcmp(sc,"menu")) { menuOpen = true; menuPage = 0; }
+  else if (!strcmp(sc,"menu2")) { menuOpen = true; menuPage = 1; }
   else if (!strcmp(sc,"card0")) { cardOpen = true; cardPage = 0; settle(8); }
   else if (!strcmp(sc,"card1")) { cardOpen = true; cardPage = 1; }
   else if (!strcmp(sc,"card2")) { cardOpen = true; cardPage = 2; }
