@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://tubiana.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v3.32-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v3.33-8A2BE2)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
 [![Stars](https://img.shields.io/github/stars/tubiana/TamaPoke?style=flat&logo=github&color=yellow)](https://github.com/tubiana/TamaPoke/stargazers)
@@ -47,6 +47,7 @@ and complete them all (shinies included).
 New since Dylan's v3.11, up to v3.32 (the details are in
 [docs/fork-changes.md](docs/fork-changes.md)):
 
+- 🧭 [**A menu of big tiles**](#a-menu-of-big-tiles): everything in two pages, trading included
 - 🗺️ [**Explore and catch**](#explore-and-catch): an island of eight places, wild creatures and a ball
 - ✨ [**Animated fights**](#animated-fights): every move drawn in its type, and a ball that wobbles
 - 📦 [**Pokédex box, adoption, experience, trading**](#pokédex-box-adoption-experience-trading)
@@ -57,6 +58,16 @@ New since Dylan's v3.11, up to v3.32 (the details are in
 - 💾 [**Save backup in the browser**](#save-backup-in-the-browser)
 
 All screenshots are rendered from the real firmware by the emulator.
+
+### A menu of big tiles
+
+| Page 1 | Page 2 |
+|---|---|
+| <img src="docs/screens/fork/menu.png" width="240"> | <img src="docs/screens/fork/menu2.png" width="240"> |
+
+Tap the creature's name: eight big tiles on two pages (swipe or tap the dots),
+and CLOSE always at the bottom. **TRADE** pairs two boards and goes straight to
+the trade screen, with no team to pick and no fight first.
 
 ### Explore and catch
 
@@ -554,8 +565,8 @@ a checklist you tick once:
 
 ### Retiring a creature early
 
-The farewell is only *offered* at final form and three days. **RETIRE** on the
-menu ends a creature whenever you like -- but what that costs depends entirely
+The farewell is only *offered* at final form and three days. **FAREWELL** on the
+menu's second page ends a creature whenever you like -- but what that costs depends entirely
 on whether the farewell had been earned yet.
 
 | | |
@@ -712,10 +723,14 @@ If one bottoms out it counts as a *slip-up*.
 - 🫧 **Bath** → a foam scene that cleans up the poops.
 
 **Touch gestures:**
-- **Tap the name** at the top = the **menu** (Pokédex / Party / Settings). Close it
-  with the CLOSE row, by tapping anywhere outside the panel, or with any swipe.
+- **Tap the name** at the top = the **menu**: two pages of four big tiles.
+  Page 1 is **POKEDEX, EXPLORE, BATTLE, TRADE**; page 2 is **TEAM, STATS,
+  SETTINGS, FAREWELL**. Swipe left/right or tap the dots to turn the page (a
+  swipe never closes it); close it with **CLOSE** or by tapping outside the
+  panel. A greyed tile (FAREWELL on an egg, TRADE with nobody to offer) does
+  nothing.
 - Tap the creature = pet it (+happiness, bond).
-- Horizontal swipe = open the **Pokédex / gallery**.
+- Swipe left = the **gym ladder** (and LAN battles); swipe right = the **party**.
 - Vertical swipe up = open the **stat card** (4 pages: Profile / Battle / Medals /
   Progress; swipe between them; tap the name on Profile to rename; on Battle the
   "Train strength" button opens the bag).
@@ -940,8 +955,10 @@ name replaces one, and `tools/gen_backs.py` fits it to 240x112.
 
 ## Trading
 
-Two paired devices (gym ladder -> **LAN**, one HOST and one JOIN) can trade from
-the LAN screen's **TRADE** button: each player picks one creature from the party
+Menu > **TRADE** on both devices, then one taps HOST and the other JOIN: no
+team to choose and no fight first, the trade screen opens as soon as they are
+paired. (Two devices already paired for a LAN battle can still trade from the
+LAN screen's **TRADE** button.) Each player picks one creature from the party
 or the box -- never the one they are raising -- both see the two offers side by
 side, and the trade happens when **both** tap OK. Changing your offer cancels the
 other player's OK. A full party AND box cannot take anything in.

@@ -20,7 +20,7 @@ extern bool cardOpen, galleryOpen, clockOpen, kbOpen, menuOpen, partyOpen, party
 extern bool trainOpen, movePickOpen, battleOpen, gymOpen, playerOpen, boxOpen, pickOpen;
 extern bool lanOpen, tradeOpen, tradePicking; extern uint8_t tradePage;
 extern uint8_t cardPage, gymPage, playerPage, movePickPage, boxPage, pickPage, partyDetail;
-extern uint8_t settingsPage;
+extern uint8_t settingsPage, menuPage;
 extern int galleryPage; extern bool galleryDirty; extern uint8_t galleryDetail;
 extern uint8_t galleryRegion;
 extern uint8_t gymRegion;
@@ -78,6 +78,7 @@ int main(){
   clearAll(); partyOpen=true; boxOpen=true;       check("box",      &boxOpen,      &boxPage);
   clearAll(); movePickOpen=true; movePickParty=0; movePickSlot=0;
                                                   check("movepick", &movePickOpen, &movePickPage);
+  clearAll(); menuOpen=true;                      check("menu",     &menuOpen,     &menuPage);
   clearAll(); pickTrainer=7; pickHard=false; pickDefault(squadCap(7,false)); pickOpen=true;
                                                   check("teampick", &pickOpen,     &pickPage);
   clearAll(); lanOpen=true; tradeOpen=true; tradePicking=true;

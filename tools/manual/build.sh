@@ -26,7 +26,7 @@ g++ -std=c++17 -O1 -w -I"$EMU" -I"$ROOT" -DSPRITE_DIR='"x"' -o "$WORK/cap" \
 
 [ -d "$WORK/sd/mons" ] || python "$HERE/unpack_pak.py" "$ROOT/web/sprites-kanto.pak" "$WORK/sd"
 
-SCENES="region starter egg main feed sleep menu card1 card2 train player stickers party
+SCENES="region starter egg main feed sleep menu menu2 card1 card2 train player stickers party
         gympick gyms fight fightmoves win dexpick dex dexdetail quiz quizright quizdone
         clock date options birthday explmap explscene explocean explvolcano wild caught keep dexbox sheetxp"
 cd "$WORK"

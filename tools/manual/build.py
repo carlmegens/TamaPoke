@@ -350,7 +350,7 @@ def build(lang, T):
     # 12 -- exploring
     d.new(T['p_explore'], GREEN, T['explore_intro'])
     y = d.y; s = 165
-    d.img(shot('menu', L, marks=((1, 233, 164, 0, 80, 164),)), xs[0], y, s)
+    d.img(shot('menu', L, marks=((1, 305, 143, 0, 426, 143),)), xs[0], y, s)
     d.img(shot('explmap', L, marks=((2, 233, 52, 0, 346, 52), (3, 128, 204, 34), (5, 113, 46, 30))), xs[1], y, s)
     d.img(shot('explscene', L, marks=((4, 276, 200, 44),)), xs[2], y, s)
     y -= s + 6
@@ -378,7 +378,7 @@ def build(lang, T):
     # 14 -- pokedex
     d.new(T['p_dex'], BLUE, T['dex_intro'])
     y = d.y; s = 165
-    d.img(shot('menu', L, marks=((1, 233, 214, 0, 80, 214),)), xs[0], y, s)
+    d.img(shot('menu', L, marks=((1, 156, 143, 0, 40, 143),)), xs[0], y, s)
     d.img(shot('dexpick', L, marks=((2, 233, 130, 0, 46, 130),)), xs[1], y, s)
     d.img(shot('dex', L, marks=((3, 353, 124, 38),)), xs[2], y, s)
     y -= s + 6
