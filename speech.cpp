@@ -122,9 +122,21 @@ void speechFrame() {
   // A flush with no text at all is an animation step that only redrew a sprite:
   // what was on screen is still there, so keep it.
   if (nCur == 0) { nBoxes = 0; return; }
+  // Outlined text (printRinged) is the same string drawn 9 times a pixel or two
+  // apart: keep one, so a busy screen does not run out of slots.
+  int kept = 0;
   for (int i = 0; i < nCur; i++) {
     Run &r = cur[i];
     while (r.len && r.t[r.len - 1] == ' ') r.t[--r.len] = 0;
+    bool dup = false;
+    for (int j = 0; j < kept && !dup; j++)
+      dup = !cur[j].region && !r.region && !strcmp(cur[j].t, r.t) && abs(cur[j].x1 - r.x1) <= 4 &&
+            abs(cur[j].y1 - r.y1) <= 4;
+    if (!dup) cur[kept++] = r;
+  }
+  nCur = kept;
+  for (int i = 0; i < nCur; i++) {
+    Run &r = cur[i];
     if (r.region) continue;
     r.hx1 = r.x1; r.hy1 = r.y1; r.hx2 = r.x2; r.hy2 = r.y2;
     int cx = (r.x1 + r.x2) / 2, cy = (r.y1 + r.y2) / 2;
