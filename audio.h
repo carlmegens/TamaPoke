@@ -49,6 +49,8 @@ bool cryPlay(int16_t dex);
 // Queued in order with the effects, so a jingle and then a cry play in turn.
 void audioPlayPcm(int8_t *pcm, uint32_t len);
 void sfxPlay(uint8_t id);   // encola un efecto (no bloquea el loop)
+// Cut off the cry or speech that is playing, and drop any still queued.
+void audioStopPcm();
 void audioSetEnabled(bool on);
 bool audioEnabled();
 bool audioActive();      // music, an effect or a cry still sounding: the CPU must not sleep

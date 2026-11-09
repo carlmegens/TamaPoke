@@ -2,6 +2,7 @@
 // the real Arduino_Canvas uses; flush() just marks the frame ready for SDL.
 #pragma once
 #include "Arduino.h"
+#include "speech.h"   // the board's SpeakCanvas does this; here the stub does
 #include <vector>
 #include <algorithm>
 
@@ -39,7 +40,7 @@ public:
       : _w(w), _h(h), _panel(p), fb(w * h, 0) {}
 
   bool begin(uint32_t = 0) { return true; }
-  void flush() { frameReady = true; }
+  void flush() { speechFrame(); frameReady = true; }
   const uint16_t *buffer() const { return fb.data(); }
   uint16_t *getFramebuffer() { return fb.data(); }   // the real Arduino_Canvas API
 
@@ -108,6 +109,7 @@ public:
     return dx * dx + dy * dy <= r * r;
   }
   void fillRoundRect(int x, int y, int w, int h, int r, uint16_t c) {
+    speechBox(x, y, w, h);
     if (w <= 0 || h <= 0) return;
     r = std::min(r, std::min(w / 2, h / 2));
     for (int j = y; j < y + h; j++)
@@ -115,6 +117,7 @@ public:
         if (inRR(i, j, x, y, w, h, r)) px(i, j, c);
   }
   void drawRoundRect(int x, int y, int w, int h, int r, uint16_t c) {
+    speechBox(x, y, w, h);
     if (w <= 0 || h <= 0) return;
     r = std::min(r, std::min(w / 2, h / 2));
     for (int j = y; j < y + h; j++)
@@ -166,6 +169,7 @@ public:
     }
   }
   void print(char ch) {
+    speechGlyph(cx, cy, textSize, textSize, ch);
     if (ch == '\n') { cy += 8 * textSize; cx = 0; return; }
     drawChar(ch, cx, cy);
     cx += 6 * textSize;

@@ -161,6 +161,7 @@ bool sdBegin() {
     Serial.printf("SD montada: %llu MB\n", SD_MMC.cardSize() / (1024ULL * 1024ULL));
     SD_MMC.mkdir("/mons");
     SD_MMC.mkdir("/cries");   // PUT cannot create a folder, so the cries pack needs it here
+    SD_MMC.mkdir("/voice");   // the Dutch speech clips (speech.cpp)
     sdScanRegionArt();
   } else {
     Serial.println("SD no detectada (el juego usa los sprites de flash)");

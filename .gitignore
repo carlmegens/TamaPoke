@@ -55,3 +55,6 @@ tools/emu/sketch.cpp
 tools/emu/proto.h
 build-nl/
 build.log
+tools/voice_cache/
+tools/sdcard/voice/
+web/voice-nl.pak

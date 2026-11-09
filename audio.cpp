@@ -31,7 +31,9 @@ struct AudioMsg {
   uint8_t sfx;       // an Sfx, when pcm is null
   int8_t *pcm;       // a cry: owned by the queue from here on, freed after play
   uint32_t len;
+  uint32_t gen;      // audioStopPcm() bumps gPcmGen: older clips are dropped
 };
+static volatile uint32_t gPcmGen = 0;
 
 // ---- I2C del códec ----
 static bool esW(uint8_t reg, uint8_t val) {
@@ -186,10 +188,10 @@ static void pump(uint32_t ms) {
 // A cry plays at CRY_GAIN per unit of volume, set in audio_mix.h beside the
 // synth's own level so the two are balanced in one place.
 
-static void playPcm(const int8_t *pcm, uint32_t len) {
+static void playPcm(const int8_t *pcm, uint32_t len, uint32_t gen) {
   if (!gVol) return;   // muted: a cry has no timing anything waits on
   const int32_t g = (int32_t)gVol * CRY_GAIN;
-  while (len) {
+  while (len && gen == gPcmGen) {
     size_t n = len > 256 ? 256 : len;
     for (size_t i = 0; i < n; i++) {
       int32_t s = (int32_t)pcm[i] * g;
@@ -221,10 +223,10 @@ static void audioTask(void *) {
       if (msg.pcm) {
         // The music voices just hold still while a cry plays and pick up where
         // they were, the same as under an effect.
-        if (gOn && gReady) {
+        if (gOn && gReady && msg.gen == gPcmGen) {
           if (!ampOn) { digitalWrite(PA, HIGH); delay(6); ampOn = true; }
           gPcmPlaying = true;
-          playPcm(msg.pcm, msg.len);
+          playPcm(msg.pcm, msg.len, msg.gen);
           gPcmPlaying = false;
         }
         free(msg.pcm);
@@ -304,16 +306,18 @@ void audioBegin() {
 }
 
 void sfxPlay(uint8_t id) {
-  AudioMsg m = { id, nullptr, 0 };
+  AudioMsg m = { id, nullptr, 0, 0 };
   if (gReady && gOn && gQ) xQueueSend(gQ, &m, 0);  // descarta si la cola esta llena
 }
 
 void audioPlayPcm(int8_t *pcm, uint32_t len) {
   if (!pcm) return;
-  AudioMsg m = { 0, pcm, len };
+  AudioMsg m = { 0, pcm, len, gPcmGen };
   // refused -- no audio, sound off, or a full queue -- means it is still ours
   if (!(gReady && gOn && gQ && len) || xQueueSend(gQ, &m, 0) != pdTRUE) free(pcm);
 }
+
+void audioStopPcm() { gPcmGen++; }
 
 void audioSetEnabled(bool on) {
   gOn = on;

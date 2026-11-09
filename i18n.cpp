@@ -289,7 +289,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Wat leuk!", "+blijheid", "TIJD INSTELLEN", "UUR", "MIN",
     "veeg omhoog: stoppen", "Taal", "MEDAILLE!", "SUPER!", "%u DAGEN OP RIJ!",
     "REEKS %u  rec %u", "BAND", "BES ???", "RODE BES", "BLAUWE BES",
-    "GROENE BES", "%s   LEEFTIJD %lud", "tik naam: hernoemen", "GEVECHT", "AAN",
+    "GROENE BES", "%s   LEEFTIJD %lud", "tik naam: hernoemen", "GEVECHT", "KRA",
     "VER", "SNE", "GEW", "KRACHT TRAINEN", "MEDAILLES %d/%d",
     "tik: terug", "NAAM:", "tik om terug te gaan", "ETEN", "BLIJ",
     "ENE", "BAD", "REC %u", "VOORTGANG", "Lv.%u",

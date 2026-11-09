@@ -41,6 +41,7 @@
 #include "rtcbat.h"
 #include "i18n.h"
 #include "audio.h"
+#include "speech.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
@@ -51,7 +52,34 @@ Arduino_DataBus *bus = new Arduino_ESP32QSPI(
 Arduino_CO5300 *panel = new Arduino_CO5300(
   bus, LCD_RESET, 0 /*rotation*/, LCD_WIDTH, LCD_HEIGHT, 6, 0, 0, 0);
 // Framebuffer completo en PSRAM: dibujamos todo y hacemos flush() (sin parpadeo)
-Arduino_Canvas *gfx = new Arduino_Canvas(LCD_WIDTH, LCD_HEIGHT, panel);
+#if defined(ESP_PLATFORM)
+// The canvas, plus a note of every glyph and button drawn, so speech.cpp knows
+// what is on screen (see speech.h). Declared as SpeakCanvas so the non-virtual
+// round-rect calls also land here.
+class SpeakCanvas : public Arduino_Canvas {
+ public:
+  using Arduino_Canvas::Arduino_Canvas;
+  size_t write(uint8_t c) override {
+    speechGlyph(cursor_x, cursor_y, textsize_x, textsize_y, (char)c);
+    return Arduino_Canvas::write(c);
+  }
+  void flush(bool force_flush = false) override {
+    speechFrame();
+    Arduino_Canvas::flush(force_flush);
+  }
+  void fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t c) {
+    speechBox(x, y, w, h);
+    Arduino_Canvas::fillRoundRect(x, y, w, h, r, c);
+  }
+  void drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t c) {
+    speechBox(x, y, w, h);
+    Arduino_Canvas::drawRoundRect(x, y, w, h, r, c);
+  }
+};
+SpeakCanvas *gfx = new SpeakCanvas(LCD_WIDTH, LCD_HEIGHT, panel);
+#else
+Arduino_Canvas *gfx = new Arduino_Canvas(LCD_WIDTH, LCD_HEIGHT, panel);  // the emulator's stub calls speech*() itself
+#endif
 
 TouchDrvCST92xx touch;
 Pet pet;
@@ -1824,6 +1852,20 @@ void handleSerial() {
   if (line.length() == 0) return;
   if (sdSerialCommand(line)) return;
 
+  if (line.startsWith("SAY ")) {        // speak a text: SAY Een wilde PIKACHU!
+    Serial.println(speechSay(line.c_str() + 4) ? "SAID" : "NOT SAID");
+    return;
+  } else if (line == "SPK") {           // the texts on screen and where they can be touched
+    speechDump();
+    return;
+  } else if (line.startsWith("TOUCH ")) {   // speak what is at x y, as a finger would
+    int tx = 0, ty = 0;
+    sscanf(line.c_str() + 6, "%d %d", &tx, &ty);
+    bool ok = speechAt(tx, ty, true);
+    Serial.println(ok ? "SAID" : "NOT SAID");
+    return;
+  }
+
   if (line == "HATCH") {
     pet.eggTap(); pet.eggTap(); pet.eggTap();
     Serial.println("DONE");
@@ -2171,7 +2213,10 @@ void handleTouch() {
     if (screenOff) pet.setScreenOff(false);        // waking the screen wakes it
     screenOff = false;
     wakeUI();
+    if (!swallowGesture) speechAt(x, y, true);     // read out what the finger is on
   } else if (pressed) {  // sigue apoyado
+    // sliding the finger onto other text reads that one too
+    if (!swallowGesture && (abs(x - tXl) > 8 || abs(y - tYl) > 8)) speechAt(x, y, false);
     tXl = x;
     tYl = y;
     // pulsacion larga sin moverse sobre el bicho -> dialogo de soltar
@@ -8602,6 +8647,9 @@ void drawButtons() {
     if (!pet.sleeping) gfx->fillRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, UI_WHITE);
     gfx->drawRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, inkColor());
     if (!off) drawMap(buttons[i].icon, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2, false);
+    // icons have no text to read, so give them a spoken name (tools/gen_voice.py harvests these)
+    static const char *const SAY[BTN_COUNT] = { "Eten geven", "Licht", "In bad", "Trainen" };
+    speechRegion(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, SAY[i]);
   }
 }
 
