@@ -3257,7 +3257,7 @@ static const char *const DEX_NAMES_IT[DEX_COUNT + 1] = {
   nullptr,  // 809
 };
 
-// indexed by Lang: ES, EN, FR, DE, IT, PT
-static const char *const *const DEX_NAMES[6] = {
-  DEX_NAMES_ES, nullptr, DEX_NAMES_FR, DEX_NAMES_DE, DEX_NAMES_IT, nullptr,
+// indexed by Lang: ES, EN, FR, DE, IT, PT, NL
+static const char *const *const DEX_NAMES[LANG_COUNT] = {
+  DEX_NAMES_ES, nullptr, DEX_NAMES_FR, DEX_NAMES_DE, DEX_NAMES_IT, nullptr, nullptr,
 };

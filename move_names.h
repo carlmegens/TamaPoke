@@ -377,7 +377,7 @@ static const char *const MOVE_NAMES_IT[MOVE_COUNT] = {
   "NEROPULSAR",  // 89
 };
 
-// indexed by Lang: ES, EN, FR, DE, IT, PT
-static const char *const *const MOVE_NAMES[6] = {
-  MOVE_NAMES_ES, nullptr, MOVE_NAMES_FR, MOVE_NAMES_DE, MOVE_NAMES_IT, nullptr,
+// indexed by Lang: ES, EN, FR, DE, IT, PT, NL
+static const char *const *const MOVE_NAMES[LANG_COUNT] = {
+  MOVE_NAMES_ES, nullptr, MOVE_NAMES_FR, MOVE_NAMES_DE, MOVE_NAMES_IT, nullptr, nullptr,
 };

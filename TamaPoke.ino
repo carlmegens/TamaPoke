@@ -4049,7 +4049,7 @@ void drawClockBtn(int x, int y, const char *l) {
 #define VOL_MINUS_X 146
 #define VOL_PLUS_X 276
 #define VOL_BTN_W 48
-static const char *const LANG_CODES[LANG_COUNT] = { "ES", "EN", "FR", "DE", "IT", "PT" };
+static const char *const LANG_CODES[LANG_COUNT] = { "ES", "EN", "FR", "DE", "IT", "PT", "NL" };
 
 // OK and the cancel hint, shared by the time and date pages; OK applies both
 #define CLOCK_OK_X 133
