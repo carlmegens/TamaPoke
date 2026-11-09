@@ -730,7 +730,7 @@ If one bottoms out it counts as a *slip-up*.
   panel. A greyed tile (FAREWELL on an egg, TRADE with nobody to offer) does
   nothing.
 - Tap the creature = pet it (+happiness, bond).
-- Horizontal swipe = open the **Pokédex / gallery**.
+- Swipe left = the **gym ladder** (and LAN battles); swipe right = the **party**.
 - Vertical swipe up = open the **stat card** (4 pages: Profile / Battle / Medals /
   Progress; swipe between them; tap the name on Profile to rename; on Battle the
   "Train strength" button opens the bag).
