@@ -125,3 +125,18 @@ uint8_t pwrPoll() {
   if (shortHit || longHit) pmu.clearIrqStatus();
   return longHit ? PWR_LONG : (shortHit ? PWR_SHORT : PWR_NONE);
 }
+
+// Serial PWR. A battery the PMU does not see shows as "no battery" everywhere
+// else; this prints what the chip itself reports, with the raw battery ADC read
+// even when the present bit is clear.
+void batDebug() {
+  if (!pmuOk) { Serial.println("PWR pmu=missing"); return; }
+  int st1 = pmu.readRegister(0x00), st2 = pmu.readRegister(0x01), det = pmu.readRegister(0x68);
+  int hi = pmu.readRegister(0x34), lo = pmu.readRegister(0x35);
+  int rawMv = (hi >= 0 && lo >= 0) ? (((hi & 0x1F) << 8) | lo) : -1;
+  Serial.printf("PWR present=%d active=%d vbus=%d charging=%d chg_state=%d st1=0x%02X st2=0x%02X detctrl=0x%02X\n",
+                pmu.isBatteryConnect(), (st1 >> 2) & 1, pmu.isVbusIn(), pmu.isCharging(), st2 & 0x07, st1, st2, det);
+  Serial.printf("PWR vbat_raw=%dmV vbus=%umV vsys=%umV pct=%d chg_curr_code=%u target_code=%u\n", rawMv,
+                pmu.getVbusVoltage(), pmu.getSystemVoltage(), pmu.getBatteryPercent(),
+                pmu.getChargerConstantCurr(), pmu.getChargeTargetVoltage());
+}

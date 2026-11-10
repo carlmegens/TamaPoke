@@ -123,6 +123,7 @@ bool rtcBegin() { return true; }
 uint32_t rtcEpoch() { return g_epoch + millis() / 1000; }
 void rtcSetEpoch(uint32_t e) { g_epoch = e - millis() / 1000; }
 bool batBegin() { return true; }
+void batDebug() { printf("PWR emulator\n"); }
 void pmuEnablePanel() {}
 int batPercent() { return 87; }
 bool batCharging() { return false; }

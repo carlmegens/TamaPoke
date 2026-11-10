@@ -10,6 +10,7 @@ void rtcSetEpoch(uint32_t e);
 bool batBegin();
 void pmuEnablePanel();           // enciende BLDO1 (OLED VDD 3.3V); llamar antes de gfx->begin()
 int batPercent();                // 0-100, -1 si no hay bateria conectada
+void batDebug();                 // serial PWR: the PMU registers that say why a battery is or is not seen
 bool batCharging();
 bool usbPresent();
 bool usbPresentNow();            // uncached (one I2C read): for deciding whether to light-sleep

@@ -1876,6 +1876,9 @@ void handleSerial() {
   if (line.startsWith("SAY ")) {        // speak a text: SAY Een wilde PIKACHU!
     Serial.println(speechSay(line.c_str() + 4) ? "SAID" : "NOT SAID");
     return;
+  } else if (line == "PWR") {           // battery / charger state straight from the PMU
+    batDebug();
+    return;
   } else if (line == "SPK") {           // the texts on screen and where they can be touched
     speechDump();
     return;

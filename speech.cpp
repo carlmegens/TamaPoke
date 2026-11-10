@@ -262,8 +262,57 @@ static const VEntry *find(const char *s, int n) {
 #define SAY_MAX (16000 * 10)   // 10 s of 8-bit 16 kHz
 #define SAY_GAP 960            // 60 ms between words
 
+// Looking the words up and reading the clips off the SD takes 50-150 ms. Done
+// in the touch handler that froze the game loop for that long: taps felt slow
+// and a swipe across a few texts ran past its 800 ms and was lost. So on the
+// board the work happens in its own task on core 0 and speechSay() only hands
+// the text over. A newer text replaces one that has not started yet.
+static bool sayNow(const char *text);
+
+#if defined(ESP_PLATFORM)
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+static TaskHandle_t gSayTask;
+static portMUX_TYPE gSayMux = portMUX_INITIALIZER_UNLOCKED;
+static char gSayText[RUN_LEN * 4];
+static bool gSayPending;
+
+static void sayTask(void *) {
+  char text[sizeof(gSayText)];
+  for (;;) {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    for (;;) {
+      portENTER_CRITICAL(&gSayMux);
+      bool have = gSayPending;
+      if (have) { memcpy(text, gSayText, sizeof(text)); gSayPending = false; }
+      portEXIT_CRITICAL(&gSayMux);
+      if (!have) break;
+      sayNow(text);
+    }
+  }
+}
+
+bool speechSay(const char *text) {
+  if (!speechReady() || !audioEnabled() || !text || !*text) return false;
+  if (!gSayTask) xTaskCreatePinnedToCore(sayTask, "say", 6144, nullptr, 1, &gSayTask, 0);
+  if (!gSayTask) return false;
+  audioStopPcm();   // a new touch cuts off whatever was still being said, right now
+  portENTER_CRITICAL(&gSayMux);
+  strncpy(gSayText, text, sizeof(gSayText) - 1);
+  gSayText[sizeof(gSayText) - 1] = 0;
+  gSayPending = true;
+  portEXIT_CRITICAL(&gSayMux);
+  xTaskNotifyGive(gSayTask);
+  return true;
+}
+#else
 bool speechSay(const char *text) {
   if (!speechReady() || !audioEnabled()) return false;
+  return sayNow(text);
+}
+#endif
+
+static bool sayNow(const char *text) {
   char norm[160];
   int16_t st[24];
   int n = speechTokens(text, norm, sizeof(norm), st, 24);
@@ -309,7 +358,7 @@ bool speechSay(const char *text) {
 #if !defined(ESP_PLATFORM)
   printf("speech: \"%s\" -> %s (%d clips)\n", text, norm, np);
 #endif
-  audioStopPcm();   // a new touch cuts off whatever was still being said
+  audioStopPcm();   // and anything queued since
   audioPlayPcm(pcm, at);
   return true;
 }
