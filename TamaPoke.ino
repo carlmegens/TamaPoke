@@ -45,7 +45,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "3.32"
+#define FW_VERSION "3.33"
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
   LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
@@ -144,21 +144,36 @@ uint8_t cardPage = 0;         // 0 perfil, 1 stats+medallas
 // and is the only free surface left.
 bool menuOpen = false;
 #define MENU_X 73
-// Four rows: PARTY and GYMS came out, since a swipe right and a swipe left now
-// reach them directly. Sized to the bezel -- the panel is 320 wide, so 160 from
-// the centre, and sqrt(233^2 - 160^2) = 169 means it can only span y 64..402.
+// Two pages of four square tiles, each an icon and a word, with CLOSE always
+// on a row of its own below them and a page indicator between. Bigger targets
+// than the old six rows, which matters for a child's finger, and room for the
+// two places that used to hide behind other screens: BATTLE (the gym chooser,
+// also a swipe left) and TRADE (straight to pairing, no squad, no fight).
+// The panel keeps the old one's size: 320 wide, so 160 from the centre, and at
+// MENU_Y 75 the round display gives a half-width of 171 against 160.
 #define MENU_Y 75
 #define MENU_W 320
 #define MENU_H 316
-#define MENU_ROW_H 46
-#define MENU_ROW_GAP 4
-// 6 rows: STATS / EXPLORE / POKEDEX / SETTINGS / RETIRE / CLOSE, each row's
-// index IS its MENU_* id. At MENU_Y 75 the panel spans 75..391 and the round
-// display gives a half-width of 171 there against the 160 a row needs, so the
-// corners stay on glass; 46 px rows keep every one above UI_TAP_MIN.
-enum : uint8_t { MENU_STATS = 0, MENU_EXPLORE, MENU_POKEDEX, MENU_SETTINGS, MENU_RETIRE, MENU_CLOSE };
-#define MENU_ROWS 6
-#define MENU_ROW_Y(i) (MENU_Y + 16 + (i) * (MENU_ROW_H + MENU_ROW_GAP))
+#define MENU_TILE_W 135
+#define MENU_TILE_H 108
+#define MENU_TILE_X(c) (MENU_X + 16 + (c) * (MENU_TILE_W + 14))
+#define MENU_TILE_Y(r) (MENU_Y + 14 + (r) * (MENU_TILE_H + 8))
+#define MENU_DOTS_Y (MENU_Y + 249)          // centre line of the page dots
+#define MENU_CLOSE_X (MENU_X + 16)
+#define MENU_CLOSE_Y (MENU_Y + 262)
+#define MENU_CLOSE_W (MENU_W - 32)
+#define MENU_CLOSE_H 44                     // UI_TAP_MIN
+// Each item's index IS its place: page = i / 4, then left-to-right, top-down.
+enum : uint8_t { MENU_POKEDEX = 0, MENU_EXPLORE, MENU_BATTLE, MENU_TRADE,
+                 MENU_TEAM, MENU_STATS, MENU_SETTINGS, MENU_FAREWELL, MENU_ITEMS };
+#define MENU_PER_PAGE 4
+#define MENU_PAGES ((MENU_ITEMS + MENU_PER_PAGE - 1) / MENU_PER_PAGE)
+#define MENU_HIT_NONE -1      // inside the panel, on nothing
+#define MENU_HIT_OUTSIDE -2   // on the dimmed area: closes
+#define MENU_HIT_CLOSE -3
+#define MENU_HIT_DOT0 -10     // page dot p is MENU_HIT_DOT0 - p
+uint8_t menuPage = 0;
+bool lanForTrade = false;   // the LAN screen was opened by TRADE: pair, then trade
 
 // Party screen. partyPick != 0 means the newcomer needs a slot: the player
 // either taps someone to replace or lets it go.
@@ -1599,6 +1614,12 @@ void loop() {
     lan.tick(now);
     tradePoll();       // a struck deal finishes whatever screen is up
   }
+  // Opened by the menu's TRADE: the moment the pair is made, go to the trade
+  // screen. Once only -- leaving it lands on the LAN screen, still paired.
+  if (lanForTrade && lanOpen && !tradeOpen && lan.state == LINK_READY) {
+    lanForTrade = false;
+    tradeOpenScreen();
+  }
 
   // avisa con un sonido cuando el bicho pasa a estar listo para evolucionar
   // (incluye el caso de cumplir al despertar). canEvolveNow es false durmiendo.
@@ -2633,7 +2654,11 @@ void onSwipe(int dir) {
   if (rpickSwipe(dir)) return;
   if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
   if (quizOpen) { quizOpen = false; return; }   // any swipe leaves the quiz
-  if (menuOpen) { menuOpen = false; return; }   // any swipe closes the menu
+  if (menuOpen) {   // pages the menu; off either end it stays put, never closes
+    int p = (int)menuPage + (dir > 0 ? -1 : 1);       // left advances, as on the card
+    if (p >= 0 && p < MENU_PAGES) { menuPage = (uint8_t)p; sfxPlay(SFX_TAP); }
+    return;
+  }
   if (battleOpen) return;   // no swiping out of a fight
   // Nor out of exploring. A child reaching for a stirring spot drags as much as
   // taps, and the drag read as a swipe and dropped them back on the map -- or
@@ -2797,6 +2822,7 @@ void onTap(int16_t x, int16_t y) {
     if (y >= LANBTN_Y && y <= LANBTN_Y + LANBTN_H &&
         x >= LANBTN_X && x <= LANBTN_X + LANBTN_W) {   // LAN battle
       gymOpen = false; gymPick = false;
+      lanForTrade = false;
       lan.state = LINK_OFF;
       lanOpen = true;
       sfxPlay(SFX_TAP);
@@ -2813,6 +2839,7 @@ void onTap(int16_t x, int16_t y) {
     }
     if (y >= 380 && y <= 412 && x >= 148 && x <= 318) {   // LAN battle
       gymOpen = false;
+      lanForTrade = false;
       lan.state = LINK_OFF;
       lanOpen = true;
       sfxPlay(SFX_TAP);
@@ -2870,30 +2897,15 @@ void onTap(int16_t x, int16_t y) {
     }
     return;
   }
-  // The menu is modal and has three independent ways out: the CLOSE row, a tap
-  // anywhere on the dimmed area outside the panel, and any swipe (see onSwipe).
-  // Deliberately no timeout: a menu that vanishes while you read it is worse
-  // than one that lingers.
+  // The menu is modal and has two ways out: the CLOSE row and a tap anywhere
+  // on the dimmed area outside the panel. A horizontal swipe turns the page
+  // (see onSwipe). Deliberately no timeout: a menu that vanishes while you
+  // read it is worse than one that lingers.
   if (menuOpen) {
-    bool inPanel = (x >= MENU_X && x <= MENU_X + MENU_W &&
-                    y >= MENU_Y && y <= MENU_Y + MENU_H);
-    if (!inPanel) { menuOpen = false; return; }   // tap outside = back to the pet
-    for (int i = 0; i < MENU_ROWS; i++) {
-      int ry = MENU_ROW_Y(i);
-      if (x < MENU_X + 18 || x > MENU_X + MENU_W - 18) continue;
-      if (y < ry || y > ry + MENU_ROW_H) continue;
-      sfxPlay(SFX_TAP);
-      menuOpen = false;
-      if (i == MENU_STATS) { cardOpen = true; cardPage = 1; }   // straight to the stats page
-      else if (i == MENU_EXPLORE) { openExplore(); }
-      else if (i == MENU_POKEDEX) { galleryOpen = true; galleryPick = true; galleryPage = 0; rpickPage = 0; galleryDetail = 0; galleryDirty = true; }
-      else if (i == MENU_SETTINGS) { openClock(); }
-      else if (i == MENU_RETIRE) {
-        if (!pet.canRetireNow()) { sfxPlay(SFX_DENY); return; }
-        choiceKind = 3; choiceUntil = millis() + 12000;
-      }
-      return;                                     // MENU_CLOSE: just shut
-    }
+    int h = menuHit(x, y);
+    if (h == MENU_HIT_OUTSIDE || h == MENU_HIT_CLOSE) { menuOpen = false; return; }
+    if (h <= MENU_HIT_DOT0) { menuPage = (uint8_t)(MENU_HIT_DOT0 - h); sfxPlay(SFX_TAP); return; }
+    if (h >= 0) menuDo((uint8_t)h);
     return;
   }
   if (movePickOpen) {
@@ -3072,6 +3084,7 @@ void onTap(int16_t x, int16_t y) {
   // and it sits clear of inPetZone (which starts at y 95).
   if (y >= 28 && y < 94) {
     menuOpen = true;
+    menuPage = 0;
     sfxPlay(SFX_TAP);
     return;
   }
@@ -6158,8 +6171,9 @@ void renderLan() {
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_LAN)) * 6, 44);
-  gfx->print(T(S_LAN));
+  const char *title = lanForTrade ? T(S_TRADE) : T(S_LAN);
+  gfx->setCursor(CX - strlen(title) * 6, 44);
+  gfx->print(title);
 
   const char *msg = T(S_LAN_PICK);
   switch (lan.state) {
@@ -6479,6 +6493,7 @@ bool tradeSwipe(int dir) {
 // Leaving deliberately: tell the peer so it reports at once instead of sitting
 // out the timeout, then free the radio -- it costs real current.
 void lanLeave() {
+  lanForTrade = false;
   if (lan.live()) lan.sendBye();
   linkNowEnd();
   lan.state = LINK_OFF;
@@ -6515,8 +6530,18 @@ void lanTap(int16_t x, int16_t y) {
     for (int i = 0; i < 2; i++) {
       int by = 120 + i * 70;
       if (x < 90 || x > 376 || y < by || y > by + 56) continue;
-      sfxPlay(SFX_TAP);
       lanWantHost = (i == 0);
+      if (lanForTrade) {
+        // Pairing to trade needs no squad choice: the link still wants one to
+        // say hello with, so it takes the default -- nobody fights with it.
+        pickTrainer = PICK_LAN;
+        pickDefault(squadCap(PICK_LAN, false));
+        if (!pickChosen()) { sfxPlay(SFX_DENY); return; }   // an egg and an empty party
+        sfxPlay(SFX_TAP);
+        lanOffer(lanWantHost);
+        return;
+      }
+      sfxPlay(SFX_TAP);
       lanOpen = false;
       pickTrainer = PICK_LAN;
       pickHard = false;
@@ -7388,15 +7413,90 @@ void renderCard() {
 
 // ---------- menu overlay ----------
 
-// Row labels are built fresh each frame because two of them carry live counts.
-static void menuRowLabel(int i, char *out, size_t n) {
+// The tiles: what each item is called and what it looks like. The Pokedex tile
+// also shows the live count under its name.
+static const char *const *menuIcon(uint8_t i) {
   switch (i) {
-    case MENU_STATS: snprintf(out, n, "%s", T(S_STATS)); break;
-    case MENU_EXPLORE: snprintf(out, n, "%s", T(S_EXPLORE)); break;
-    case MENU_POKEDEX: snprintf(out, n, T(S_POKEDEX_FMT), pet.registeredCount(), dexObtainable()); break;
-    case MENU_SETTINGS: snprintf(out, n, "%s", T(S_SETTINGS)); break;
-    case MENU_RETIRE: snprintf(out, n, "%s", T(S_RETIRE)); break;
-    default: snprintf(out, n, "%s", T(S_CLOSE)); break;
+    case MENU_POKEDEX: return SPR_MENU_DEX;
+    case MENU_EXPLORE: return SPR_MENU_EXPLORE;
+    case MENU_BATTLE: return SPR_MENU_BATTLE;
+    case MENU_TRADE: return SPR_MENU_TRADE;
+    case MENU_TEAM: return SPR_MENU_TEAM;
+    case MENU_STATS: return SPR_MENU_STATS;
+    case MENU_SETTINGS: return SPR_MENU_SETTINGS;
+    default: return SPR_MENU_FAREWELL;
+  }
+}
+static const char *menuLabel(uint8_t i) {
+  switch (i) {
+    case MENU_POKEDEX: return "POKEDEX";      // the same word in all six languages
+    case MENU_EXPLORE: return T(S_EXPLORE);
+    case MENU_BATTLE: return T(S_BATTLE);
+    case MENU_TRADE: return T(S_MENU_TRADE);
+    case MENU_TEAM: return T(S_MENU_TEAM);
+    case MENU_STATS: return T(S_STATS);
+    case MENU_SETTINGS: return T(S_MENU_SETTINGS);
+    default: return T(S_MENU_FAREWELL);
+  }
+}
+
+// ONE answer to "can this tile be used now", asked by the drawing (greyed) and
+// by the tap (refused) alike, so a grey tile can never still work.
+bool menuItemDisabled(uint8_t i) {
+  if (i == MENU_FAREWELL) return !pet.canRetireNow();   // an egg or a companion
+  if (i == MENU_TRADE) {                                 // nobody to offer
+    int8_t c[PARTY_SLOTS + BOX_SLOTS];
+    return tradeCands(c) == 0;
+  }
+  return false;
+}
+
+// Where a tap on the open menu landed. Drawing and tapping share the geometry
+// through the MENU_* macros; the tests ask this rather than restating it.
+int menuHit(int16_t x, int16_t y) {
+  if (x < MENU_X || x > MENU_X + MENU_W || y < MENU_Y || y > MENU_Y + MENU_H)
+    return MENU_HIT_OUTSIDE;
+  if (y >= MENU_CLOSE_Y && y <= MENU_CLOSE_Y + MENU_CLOSE_H &&
+      x >= MENU_CLOSE_X && x <= MENU_CLOSE_X + MENU_CLOSE_W) return MENU_HIT_CLOSE;
+  // the strip between the tiles and CLOSE holds the page dots; a tap there
+  // picks the page under the finger, for a child who cannot swipe yet
+  if (y > MENU_TILE_Y(1) + MENU_TILE_H && y < MENU_CLOSE_Y) {
+    int p = (x - MENU_X) * MENU_PAGES / MENU_W;
+    if (p < 0) p = 0;
+    if (p > MENU_PAGES - 1) p = MENU_PAGES - 1;
+    return MENU_HIT_DOT0 - p;
+  }
+  for (uint8_t k = 0; k < MENU_PER_PAGE; k++) {
+    uint8_t i = menuPage * MENU_PER_PAGE + k;
+    if (i >= MENU_ITEMS) break;
+    int tx = MENU_TILE_X(k % 2), ty = MENU_TILE_Y(k / 2);
+    if (x >= tx && x <= tx + MENU_TILE_W && y >= ty && y <= ty + MENU_TILE_H) return i;
+  }
+  return MENU_HIT_NONE;
+}
+
+void menuDo(uint8_t i) {
+  if (menuItemDisabled(i)) { sfxPlay(SFX_DENY); return; }   // the menu stays up
+  sfxPlay(SFX_TAP);
+  menuOpen = false;
+  switch (i) {
+    case MENU_POKEDEX:
+      galleryOpen = true; galleryPick = true; galleryPage = 0; rpickPage = 0;
+      galleryDetail = 0; galleryDirty = true;
+      break;
+    case MENU_EXPLORE: openExplore(); break;
+    case MENU_BATTLE:                         // the same place as a swipe left
+      gymOpen = true; gymPick = true; gymPage = 0; rpickPage = 0;
+      break;
+    case MENU_TRADE:                          // pairing, then the trade screen
+      lanForTrade = true;
+      lan.state = LINK_OFF;
+      lanOpen = true;
+      break;
+    case MENU_TEAM: partyOpen = true; break;  // the same place as a swipe right
+    case MENU_STATS: cardOpen = true; cardPage = 1; break;   // straight to the stats page
+    case MENU_SETTINGS: openClock(); break;
+    case MENU_FAREWELL: choiceKind = 3; choiceUntil = millis() + 12000; break;
   }
 }
 
@@ -7419,20 +7519,39 @@ void drawMenu() {
   gfx->fillRoundRect(MENU_X, MENU_Y, MENU_W, MENU_H, 18, UI_WHITE);
   gfx->drawRoundRect(MENU_X, MENU_Y, MENU_W, MENU_H, 18, UI_INK);
 
-  for (int i = 0; i < MENU_ROWS; i++) {
-    int y = MENU_ROW_Y(i);
-    bool close = (i == MENU_ROWS - 1);
-    bool dead = (i == MENU_RETIRE && !pet.canRetireNow());   // an egg or a companion
-    gfx->fillRoundRect(MENU_X + 18, y, MENU_W - 36, MENU_ROW_H, 12,
-                       close || dead ? UI_TRACK : UI_BG_DAY);
-    gfx->drawRoundRect(MENU_X + 18, y, MENU_W - 36, MENU_ROW_H, 12, UI_INK);
-    char lbl[28];
-    menuRowLabel(i, lbl, sizeof(lbl));
+  for (uint8_t k = 0; k < MENU_PER_PAGE; k++) {
+    uint8_t i = menuPage * MENU_PER_PAGE + k;
+    int tx = MENU_TILE_X(k % 2), ty = MENU_TILE_Y(k / 2);
+    if (i >= MENU_ITEMS) continue;              // an empty place stays empty
+    bool dead = menuItemDisabled(i);
+    gfx->fillRoundRect(tx, ty, MENU_TILE_W, MENU_TILE_H, 14, dead ? UI_TRACK : UI_BG_DAY);
+    gfx->drawRoundRect(tx, ty, MENU_TILE_W, MENU_TILE_H, 14, UI_INK);
+    drawMap(menuIcon(i), 16, tx + MENU_TILE_W / 2 - 24, ty + 12, 3, dead);
+    const char *lbl = menuLabel(i);
     gfx->setTextColor(UI_INK);
     gfx->setTextSize(2);
-    gfx->setCursor(CX - (int)strlen(lbl) * 6, y + MENU_ROW_H / 2 - 8);
+    gfx->setCursor(tx + MENU_TILE_W / 2 - (int)strlen(lbl) * 6, ty + 68);
     gfx->print(lbl);
+    if (i == MENU_POKEDEX) {
+      char cnt[16];
+      snprintf(cnt, sizeof(cnt), "%u/%u", (unsigned)pet.registeredCount(), (unsigned)dexObtainable());
+      gfx->setTextSize(1);
+      gfx->setCursor(tx + MENU_TILE_W / 2 - (int)strlen(cnt) * 3, ty + 90);
+      gfx->print(cnt);
+    }
   }
+
+  for (uint8_t p = 0; p < MENU_PAGES; p++) {    // which page this is
+    int dx = CX - (MENU_PAGES - 1) * 10 + p * 20;
+    gfx->fillCircle(dx, MENU_DOTS_Y, 5, p == menuPage ? UI_INK : UI_TRACK);
+  }
+
+  gfx->fillRoundRect(MENU_CLOSE_X, MENU_CLOSE_Y, MENU_CLOSE_W, MENU_CLOSE_H, 12, UI_TRACK);
+  gfx->drawRoundRect(MENU_CLOSE_X, MENU_CLOSE_Y, MENU_CLOSE_W, MENU_CLOSE_H, 12, UI_INK);
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(2);
+  gfx->setCursor(CX - (int)strlen(T(S_CLOSE)) * 6, MENU_CLOSE_Y + MENU_CLOSE_H / 2 - 8);
+  gfx->print(T(S_CLOSE));
 }
 
 // ---------- training submenu (5th icon) ----------

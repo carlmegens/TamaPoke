@@ -198,6 +198,10 @@ enum StrId : uint8_t {
   S_TRADE_DONE_FMT,  // "%s is yours!"
   S_TRADE_NONE,  // trade: nobody in the party or box
   S_TRADE_CHANGE,  // trade: pick someone else
+  S_MENU_TRADE,  // menu tile: go and trade (<= 10 letters, it sits in a tile)
+  S_MENU_TEAM,  // menu tile: the party
+  S_MENU_SETTINGS,  // menu tile: settings, short enough for a tile
+  S_MENU_FAREWELL,  // menu tile: say goodbye to the creature (was RETIRE)
   STR_COUNT
 };
 

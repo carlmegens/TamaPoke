@@ -62,8 +62,8 @@ int main(){
 
   // menu -> EXPLORE -> the forest
   click(233, 60);
-  click(233, 75 + 16 + 46 + 4 + 22);
-  ck(exploreOpen, "the menu's EXPLORE row opens the map");
+  click(305, 143);                        // page 1, top-right tile == EXPLORE
+  ck(exploreOpen, "the menu's EXPLORE tile opens the map");
   click(MAP_PINS[PL_FOREST].x * 2, MAP_PINS[PL_FOREST].y * 2);
   ck(expPlace == PL_FOREST, "a pin opens its place");
 
