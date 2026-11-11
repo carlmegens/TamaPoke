@@ -896,13 +896,13 @@ The egg rolls rarity over the ~79 base forms (47 common / 27 rare / 5 legendary)
 a farewell and punished by a runaway. Legendaries only with 25+ registered.
 **Shiny** 1/48 (better with streak/bond/farewell).
 
-**Languages:** the UI ships in 6 languages — English (default), Spanish, French,
-German, Italian, Portuguese — switchable from the settings screen (swipe down).
+**Languages:** the UI ships in 7 languages — English (default), Spanish, French,
+German, Italian, Portuguese, Dutch — switchable from the settings screen (swipe down).
 Species and move names follow it too (SALAMECHE and LANCE-FLAMME in French),
 from PokeAPI via `tools/gen_dex_names.py` and `tools/gen_move_names.py`, accents
 folded since the font has none. Move names keep to 12 letters to fit their
 buttons, using an older game's shorter official name where one exists.
-Portuguese, Spanish and Italian keep the English names, as their games do.
+Portuguese, Spanish, Italian and Dutch keep the English names, as their games do.
 
 **Cries (optional):** with the cries pack on the card, a creature cries when it
 hatches, when an evolution is revealed, when it leaves (farewell, running away,

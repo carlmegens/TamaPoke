@@ -16,7 +16,7 @@ Personal, non-commercial fan project. Code MIT; sprites CC BY-NC (PMD SpriteColl
 | `party.cpp/.h` | The 6 retired pets banked by farewell/release (not runaway), the 18-slot box, and their EXPERIENCE (`gainXp`, kept in `xp[]`/`boxXp[]` under their own NVS keys, never inside `PartyMon`) |
 | `dexbox.cpp/.h` | The Pokedex box: one creature per species, a FILE on the board's FAT partition (809 records do not fit the 20 KB NVS, and a full NVS fails every save). Same stdio code on the board (`/ffat/`) and in the emulator |
 | `calendar.h` | Dates from the RTC, the calendar events and their egg types; pure, so `calendar_test` sweeps whole years |
-| `i18n.cpp/.h` | 6-language string table (ES/EN/FR/DE/IT/PT) |
+| `i18n.cpp/.h` | 7-language string table (ES/EN/FR/DE/IT/PT/NL) |
 | `audio.cpp/.h` | ES8311 codec over I2S |
 | `backs.h` | GENERATED (`tools/gen_backs.py`) from `tools/backs/*.png`: the biome backdrops (supplied art), the gym arenas (`tools/gen_scenes.py`, ours) and the main screen's `HOMES` (`tools/gen_home.py`, ours: one index image per biome with FOUR palettes, dawn/day/dusk/night, which `home_test` reads back off the panel). Any PNG under a scene's name replaces it |
 | `power.h` / `batcurve.h` / `blit.h` | From upstream (ViezeVingertjes): the power policy (frame rate, brightness, light sleep, `idleSince()`), the LiPo gauge and safe power-off, and sprites drawn as runs. Pure, so `power_test`, `batcurve_test` and `blit_test` drive them |
@@ -45,12 +45,12 @@ Wrong partition scheme (no FAT) or PSRAM off = it builds and then fails on hardw
 ## Hard rules
 
 **No accents, ñ, or non-ASCII in any firmware string.** The bitmap font has no glyphs
-for them. This applies to *all six* languages — French, German, Portuguese and Spanish
+for them. This applies to *all seven* languages — French, German, Portuguese, Spanish and Dutch
 strings in `i18n.cpp` are deliberately written unaccented ("Esta", "bano", "Pokedex").
 Adding a proper "é" silently renders as garbage on the panel.
 
 **Adding a UI string is a two-file, order-sensitive edit.** Append the `StrId` to the
-enum in `i18n.h`, then add the translation at the *same index* in all 6 rows of
+enum in `i18n.h`, then add the translation at the *same index* in all 7 rows of
 `STRINGS[LANG_COUNT][STR_COUNT]` in `i18n.cpp`. The table is positional — a missing
 entry in one language shifts every string after it in that language.
 

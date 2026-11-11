@@ -4062,7 +4062,7 @@ void drawClockBtn(int x, int y, const char *l) {
 #define VOL_MINUS_X 146
 #define VOL_PLUS_X 276
 #define VOL_BTN_W 48
-static const char *const LANG_CODES[LANG_COUNT] = { "ES", "EN", "FR", "DE", "IT", "PT" };
+static const char *const LANG_CODES[LANG_COUNT] = { "ES", "EN", "FR", "DE", "IT", "PT", "NL" };
 
 // OK and the cancel hint, shared by the time and date pages; OK applies both
 #define CLOCK_OK_X 133
@@ -7384,7 +7384,7 @@ static const char *const *menuIcon(uint8_t i) {
 }
 static const char *menuLabel(uint8_t i) {
   switch (i) {
-    case MENU_POKEDEX: return "POKEDEX";      // the same word in all six languages
+    case MENU_POKEDEX: return "POKEDEX";      // the same word in every language
     case MENU_EXPLORE: return T(S_EXPLORE);
     case MENU_BATTLE: return T(S_BATTLE);
     case MENU_TRADE: return T(S_MENU_TRADE);

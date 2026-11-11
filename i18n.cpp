@@ -278,6 +278,58 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "EXPLORAR", "PRADO", "PRAIA", "FLORESTA", "VULCAO", "MONTANHA", "NEVE", "OCEANO", "CAVERNA",
     "Toca no que se mexe!", "Descansa para explorar", "+1 em %uh%02u", "%s fugiu!", "Um %s selvagem!", "Ninguem aqui", "Primeiro choca o ovo!", "BALL", "Apanhado! %s", "Oh nao! Escapou!", "Desmaiou... usa uma BALL!",
     "Qual %s ficar?", "VELHO Nv.%u", "NOVO Nv.%u", "Na Pokedex: Nv.%u", "PARA A EQUIPA", "GUARDAR AQUI", "%s esta na Pokedex", "%s +%u XP", "%s sobe a Nv.%u!", "%s virou %s!", "ADOTAR", "CERTEZA?", "TROCA", "DAS", "RECEBES", "Quem vais trocar?", "A espera do outro treinador", "O outro disse OK!", "%s e teu!", "Nenhum Pokemon para trocar", "MUDAR", "TROCAR", "EQUIPA", "AJUSTES", "DESPEDIDA", },
+  // ---------------- NL ----------------
+  {
+    "Evolueert!", "Nam nam!", "Lekker!", "Heeft honger!", "Moet in bad!",
+    "Doodmoe...", "Verdrietig...", "Beetje mollig...", "Het is SHINY!!", "Is blij",
+    "BEDANKT! Vaarwel", "Weggelopen...", "Dag! Zwaait gedag...", "EI", "Legendarisch ei!?",
+    "Zeldzaam ei!", "Tik op het ei...", "Hij beweegt!", "Bijna zover!", "POKEDEX %u/%u",
+    "%s%s Lv.%u", "%s vrijlaten?", "JA", "NEE", "%u KLAPPEN",
+    "KRACHT +%u", "NIEUW RECORD!", "RECORD: %u", "SLA SNEL!", "PUNTEN: %u",
+    "Wat leuk!", "+blijheid", "TIJD INSTELLEN", "UUR", "MIN",
+    "veeg omhoog: stoppen", "Taal", "MEDAILLE!", "SUPER!", "%u DAGEN OP RIJ!",
+    "REEKS %u  rec %u", "BAND", "BES ???", "RODE BES", "BLAUWE BES",
+    "GROENE BES", "%s   LEEFTIJD %lud", "tik naam: hernoemen", "GEVECHT", "AANV",
+    "VER", "SNLHD", "GEW", "KRACHT TRAINEN", "MEDAILLES %d/%d",
+    "tik: terug", "NAAM:", "tik om terug te gaan", "ETEN", "BLIJ",
+    "ENE", "BAD", "REC %u", "VOORTGANG", "Lv.%u",
+    "%u min tot Lv.%u", "EVOLUTIE", "Volgroeid", "Klaar om te evolueren!", "Alles >=40 om te evolueren",
+    "Evolueert over %u lv.", "Foutjes: %u", "SND AAN", "SND UIT", "EVOLUEREN!",
+    "%s wil je iets vertellen...", "%s voelt zich alleen...", "Evolueren?", "Zo houden", "Afscheid nemen?",
+    "Vaarwel", "Samen blijven", "Kies je starter", "Geen sprites", "Zet ze op de SD",
+    "HP", "IV %u", "MENU", "INSTELLINGEN", "SLUITEN",
+    "TEAM %u/6", "- leeg -", "%s zit in je team!", "Team vol: wie moet eruit?", "Laat maar gaan",
+    "WAARDEN", "TRAINEN", "KRACHT", "SNELHEID", "VERDEDIGING",
+    "Groeit vanzelf als hij blij is", "AANVALLEN", "- leeg -", "Kies een aanval", "Tik een vak om te wisselen",
+    "KRACHT %u", "STATUS", "%s wil leren", "Niet leren", "%s gebruikt %s",
+    "Super effectief!", "Niet erg effectief...", "Het had geen effect...", "%s mist!", "Voltreffer!",
+    "%s is verslagen!", "Hij raakt zichzelf!", "%s: %s", "VERLAMD", "VERBRAND",
+    "VERGIFTIGD", "SLAAPT", "BEVROREN", "IN DE WAR", "Gewonnen!",
+    "Verloren...", "%s stuurt %s", "Ga, %s!", "GYMS", "BADGES %u/8",
+    "TRAINER", "SNELHEID +%u", "tik: ander poppetje", "%u in totaal", "NORMAAL",
+    "MOEILIJK", "GEKOZEN %u/%u", "VECHTEN", "OP SLOT", "POKEMON",
+    "%s verslagen!", "NIEUWE BADGE!", "VOL %u", "BOX %u/%u", "ruil met %s: kies een vak",
+    "BOX", "TERUGHALEN", "alleen als er een ei wacht", "LAN GEVECHT", "STARTEN",
+    "MEEDOEN", "zoeken...", "klaar!", "andere versie", "starten of meedoen",
+    "rivaal: %u mons", "de rivaal is weg", "wachten op de rivaal...", "OPNIEUW", "VLUCHTEN",
+    "waar dit ei vandaan komt", "%s +%u", "kan niet verder trainen", "KIES EEN REGIO", "AFSCHEID",
+    "Nu al afscheid nemen?", "de volgende evolueert een dag later", "evolueert een dag later", "PACK MIST", "VRIJLATEN",
+    "voor altijd weg", "NAAR TEAM", "hij komt niet in je team", "OPTIES", "KINDERMODUS",
+    "loopt nooit weg, volume max 5", "BEHOEFTEN", "hoe snel de balken zakken", "AAN", "UIT",
+    "QUIZ", "WIE IS DEZE POKEMON?", "GOED!", "HET WAS %s!", "NOG %u VANDAAG",
+    "KOM MORGEN TERUG!", "tik: volgende", "tik de schaduw: horen", "STICKERS", "NIEUWE STICKER!",
+    "VERJAARDAG", "Een cadeau! Tik erop!", "Geen plek vrij", "Gefeliciteerd!", "DATUM INSTELLEN",
+    "DAG", "MAAND", "JAAR", "Vandaag: %u/%u", "VERKENNEN",
+    "WEIDE", "STRAND", "BOS", "VULKAAN", "BERG",
+    "SNEEUW", "ZEE", "GROT", "Tik op wat beweegt!", "Rust uit om te verkennen",
+    "+1 over %uh%02u", "%s is gevlucht!", "Een wilde %s!", "Hier woont niemand", "Broed eerst je ei uit!",
+    "BALL", "Gevangen! %s", "Oh nee! Hij is los!", "Verslagen... probeer een BALL!", "Welke %s houd je?",
+    "OUD Lv.%u", "NIEUW Lv.%u", "In de Pokedex: Lv.%u", "NAAR TEAM", "HIER BEWAREN",
+    "%s zit in de Pokedex", "%s +%u XP", "%s is nu Lv.%u!", "%s wordt %s!", "ADOPTEREN",
+    "ZEKER?", "RUILEN", "JIJ GEEFT", "JIJ KRIJGT", "Wie ga je ruilen?",
+    "Wachten op de andere trainer", "De ander zegt OK!", "%s is van jou!", "Geen Pokemon om te ruilen", "WISSELEN",
+    "RUILEN", "TEAM", "INSTELLEN", "AFSCHEID",
+  },
 };
 
 // Nombres de medalla en sus tres longitudes [idioma][medalla].
@@ -288,6 +340,7 @@ static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Lv.10", "Lv.25", "Lv.50", "BEERE", "7 SERIE", "BINDUNG", "ENDFORM", "FIT" },
   { "Lv.10", "Lv.25", "Lv.50", "BACCA", "SERIE 7", "LEGAME", "FORMA MAX", "IN FORMA" },
   { "Niv.10", "Niv.25", "Niv.50", "BAGA", "SEQ 7", "LACO", "FORMA MAX", "EM FORMA" },
+  { "Lv.10", "Lv.25", "Lv.50", "BES", "7 OP RIJ", "BAND", "VOLGROEID", "FIT" },
 };
 static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Nv10", "Nv25", "Nv50", "BAYA", "7DIAS", "VINC", "TOPE", "SANO" },
@@ -296,6 +349,7 @@ static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Lv10", "Lv25", "Lv50", "BEERE", "7TAGE", "BND", "END", "FIT" },
   { "Lv10", "Lv25", "Lv50", "BACCA", "7GG", "LEG", "MAX", "FIT" },
   { "Niv10", "Niv25", "Niv50", "BAGA", "7DIAS", "LACO", "MAX", "FIT" },
+  { "Lv10", "Lv25", "Lv50", "BES", "7DAG", "BAND", "TOP", "FIT" },
 };
 static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAYA HALLADA",
@@ -310,6 +364,7 @@ static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
     "SERIE 7 GIORNI", "LEGAME MAX", "FORMA FINALE", "IN FORMA" },
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAGA ACHADA",
     "SEQ 7 DIAS", "LACO MAX", "FORMA FINAL", "EM FORMA" },
+  { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BES GEVONDEN", "7 DAGEN OP RIJ", "MAX BAND", "VOLGROEID", "FIT" },
 };
 
 const char *T(StrId id) { return STRINGS[gLang][id]; }
@@ -322,6 +377,7 @@ static const char *const STK_NAME[LANG_COUNT][STK_COUNT] = {
   { "NEUJAHR", "VALENTIN", "POKE-TAG", "FRUEHLING", "SOMMER", "HERBST", "HALLOWEEN", "WINTER", "WEIHNACHT", "GEB.-TAG", "DEX 10", "DEX 50", "DEX 100", "DEX 200", "QUIZ 10", "QUIZ 50", "SHINY" },
   { "CAPODANNO", "S.VALENT.", "POKE DAY", "PRIMAVERA", "ESTATE", "AUTUNNO", "HALLOWEEN", "INVERNO", "NATALE", "AUGURI", "DEX 10", "DEX 50", "DEX 100", "DEX 200", "QUIZ 10", "QUIZ 50", "SHINY" },
   { "ANO NOVO", "NAMORADOS", "DIA POKE", "PRIMAVERA", "VERAO", "OUTONO", "HALLOWEEN", "INVERNO", "NATAL", "ANIVERS.", "DEX 10", "DEX 50", "DEX 100", "DEX 200", "QUIZ 10", "QUIZ 50", "SHINY" },
+  { "NIEUWJAAR", "VALENTIJN", "POKE DAG", "LENTE", "ZOMER", "HERFST", "HALLOWEEN", "WINTER", "KERST", "JARIG", "DEX 10", "DEX 50", "DEX 100", "DEX 200", "QUIZ 10", "QUIZ 50", "SHINY" },
 };
 
 const char *medalName(int i)  { return MED_NAME[gLang][i]; }

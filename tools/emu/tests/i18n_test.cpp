@@ -21,7 +21,7 @@ void sfxPlay(uint8_t) {}
 #include <cstring>
 
 // STRINGS is file-static, so go through the same accessor the firmware uses.
-static const char *LANG[] = { "ES", "EN", "FR", "DE", "IT", "PT" };
+static const char *LANG[] = { "ES", "EN", "FR", "DE", "IT", "PT", "NL" };
 
 int main() {
   int bad = 0;

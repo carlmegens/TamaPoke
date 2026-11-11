@@ -23,7 +23,7 @@ void sfxPlay(uint8_t){}
 static int bad=0;
 static void ck(bool ok,const char*w){printf("%s  %s\n",ok?"PASS":"FAIL",w); if(!ok)bad++;}
 
-static const char *LANG_NAME[] = { "ES", "EN", "FR", "DE", "IT", "PT" };
+static const char *LANG_NAME[] = { "ES", "EN", "FR", "DE", "IT", "PT", "NL" };
 
 // the font has A-Z, 0-9 and a little punctuation; anything else is garbage
 static bool fontSafe(const char *s) {
