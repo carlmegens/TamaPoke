@@ -27,7 +27,7 @@ RATE = 16000
 
 # How an on-screen word is said, where the text abbreviates.
 SPOKEN = {
-    'lv': 'level', 'kra': 'kracht', 'ver': 'verdediging', 'sne': 'snelheid', 'gew': 'gewicht',
+    'lv': 'level', 'kra': 'kracht', 'aanv': 'aanval', 'ver': 'verdediging', 'sne': 'snelheid', 'snlhd': 'snelheid', 'gew': 'gewicht',
     'ene': 'energie', 'rec': 'record', 'min': 'minuten', 'vol': 'volume', 'snd': 'geluid',
     'h': 'uur', 'hp': 'HP', 'iv': 'IV', 'xp': 'XP', 'sd': 'SD', 'lan': 'LAN', 'ok': 'oké',
     'pokedex': 'pokédex', 'pokemon': 'pokémon', 'dex': 'dex', 'nv': 'level',

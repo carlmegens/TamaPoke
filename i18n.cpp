@@ -289,11 +289,11 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Wat leuk!", "+blijheid", "TIJD INSTELLEN", "UUR", "MIN",
     "veeg omhoog: stoppen", "Taal", "MEDAILLE!", "SUPER!", "%u DAGEN OP RIJ!",
     "REEKS %u  rec %u", "BAND", "BES ???", "RODE BES", "BLAUWE BES",
-    "GROENE BES", "%s   LEEFTIJD %lud", "tik naam: hernoemen", "GEVECHT", "KRA",
-    "VER", "SNE", "GEW", "KRACHT TRAINEN", "MEDAILLES %d/%d",
+    "GROENE BES", "%s   LEEFTIJD %lud", "tik naam: hernoemen", "GEVECHT", "AANV",
+    "VER", "SNLHD", "GEW", "KRACHT TRAINEN", "MEDAILLES %d/%d",
     "tik: terug", "NAAM:", "tik om terug te gaan", "ETEN", "BLIJ",
     "ENE", "BAD", "REC %u", "VOORTGANG", "Lv.%u",
-    "%u min tot Lv.%u", "EVOLUTIE", "Laatste vorm", "Klaar om te evolueren!", "Alles >=40 om te evolueren",
+    "%u min tot Lv.%u", "EVOLUTIE", "Volgroeid", "Klaar om te evolueren!", "Alles >=40 om te evolueren",
     "Evolueert over %u lv.", "Foutjes: %u", "SND AAN", "SND UIT", "EVOLUEREN!",
     "%s wil je iets vertellen...", "%s voelt zich alleen...", "Evolueren?", "Zo houden", "Afscheid nemen?",
     "Vaarwel", "Samen blijven", "Kies je starter", "Geen sprites", "Zet ze op de SD",
@@ -340,7 +340,7 @@ static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Lv.10", "Lv.25", "Lv.50", "BEERE", "7 SERIE", "BINDUNG", "ENDFORM", "FIT" },
   { "Lv.10", "Lv.25", "Lv.50", "BACCA", "SERIE 7", "LEGAME", "FORMA MAX", "IN FORMA" },
   { "Niv.10", "Niv.25", "Niv.50", "BAGA", "SEQ 7", "LACO", "FORMA MAX", "EM FORMA" },
-  { "Lv.10", "Lv.25", "Lv.50", "BES", "7 OP RIJ", "BAND", "EINDVORM", "FIT" },
+  { "Lv.10", "Lv.25", "Lv.50", "BES", "7 OP RIJ", "BAND", "VOLGROEID", "FIT" },
 };
 static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Nv10", "Nv25", "Nv50", "BAYA", "7DIAS", "VINC", "TOPE", "SANO" },
@@ -349,7 +349,7 @@ static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Lv10", "Lv25", "Lv50", "BEERE", "7TAGE", "BND", "END", "FIT" },
   { "Lv10", "Lv25", "Lv50", "BACCA", "7GG", "LEG", "MAX", "FIT" },
   { "Niv10", "Niv25", "Niv50", "BAGA", "7DIAS", "LACO", "MAX", "FIT" },
-  { "Lv10", "Lv25", "Lv50", "BES", "7DAG", "BAND", "EIND", "FIT" },
+  { "Lv10", "Lv25", "Lv50", "BES", "7DAG", "BAND", "TOP", "FIT" },
 };
 static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAYA HALLADA",
@@ -364,7 +364,7 @@ static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
     "SERIE 7 GIORNI", "LEGAME MAX", "FORMA FINALE", "IN FORMA" },
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAGA ACHADA",
     "SEQ 7 DIAS", "LACO MAX", "FORMA FINAL", "EM FORMA" },
-  { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BES GEVONDEN", "7 DAGEN OP RIJ", "MAX BAND", "LAATSTE VORM", "FIT" },
+  { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BES GEVONDEN", "7 DAGEN OP RIJ", "MAX BAND", "VOLGROEID", "FIT" },
 };
 
 const char *T(StrId id) { return STRINGS[gLang][id]; }
